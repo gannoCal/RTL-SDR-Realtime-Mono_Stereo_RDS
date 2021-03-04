@@ -66,6 +66,56 @@ int main()
 	// if you wish to write some binary files, see below example
 	// const std::string out_fname = "../data/outdata.bin";
 	// writeBinData(out_fname, bin_data);
+	const int rf_Fs = 2.4e6;
+	const int rf_Fc = 100e3;
+	const int rf_taps = 151;
+	const int rf_decim = 10;
+
+	const int audio_Fs = 48e3;
+	const int audio_decim = 5;
+	const int audio_Fc = 16e3;
+	const int audio_taps = 151;
+
+	const string in_fname = "../data/iq_samples.raw";
+	std::vector<float> bin_data;
+	readBinData(in_fname, &bin_data)
+
+	std::vector<float> rf_coeff;
+
+	impulseResponseLPF(audio_Fs, audio_Fc, audio_taps, rf_coeff);
+
+
+	const int block_size = 1024 * rf_decim * audio_decim * 2;
+	int block_count = 0;
+	vector<int> state_i_lpf_100k(rf_taps-1, 0);
+	vector<int> state_q_lpf_100k(rf_taps-1, 0);
+	vector<int> data_to_keep(audio_taps-1, 0);
+	vector<int> state_conv(audio_taps-1, 0);
+	vector<int> state_phase(2, 0);
+
+	while ((block_count+1)*block_size < len(iq_data)){
+// still need to change this
+
+		i_filt, state_i_lpf_100k = signal.lfilter(rf_coeff, 1.0, \
+				iq_data[(block_count)*block_size:(block_count+1)*block_size:2],
+				zi=state_i_lpf_100k)
+		q_filt, state_q_lpf_100k = signal.lfilter(rf_coeff, 1.0, \
+				iq_data[(block_count)*block_size+1:(block_count+1)*block_size:2],
+				zi=state_q_lpf_100k)
+
+		i_ds = i_filt[::rf_decim]
+		q_ds = q_filt[::rf_decim]
+
+		fm_demod, state_phase = fmDemodArctanBlock(i_ds, q_ds, state_phase)
+
+
+		audio_filt, state_conv = conv(audio_coeff, fm_demod, state_conv)
+
+		audio_block = audio_filt[::audio_decim]
+
+		audio_data = np.concatenate((audio_data, audio_block))
+
+}
 
 	// naturally, you can comment the line below once you are comfortable to run gnuplot
 	std::cout << "Run: gnuplot -e 'set terminal png size 1024,768' example.gnuplot > ../data/example.png\n";
