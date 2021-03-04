@@ -105,7 +105,7 @@ int main()
 
 		i_ds.resize(int(i_filt/5), 0.0);
 		q_ds.resize(int(q_filt/5), 0.0);
-		int j = 0
+		int j = 0;
 
 		for(auto i = 0; i < i_filt.size();i++){
 			if(i%rf_decim == 0){
@@ -121,10 +121,19 @@ int main()
 
 
 		audio_filt, state_conv = conv(audio_coeff, fm_demod, state_conv)
+		convolveFIR(audio_filt,	audio_coeff,fm_demod)
 
-		audio_block = audio_filt[::audio_decim]
+		 j = 0;
+		for(auto i = 0; i < i_filt.size();i++){
+			if(i%rf_decim == 0){
+				i_ds[j] = i_filt[i];
+				q_ds[j] = q_filt[i];
+				j++;
 
-		audio_data = np.concatenate((audio_data, audio_block))
+			}
+		}
+
+		audio_data.insert(audio_data.end(), audio_block.begin(), audio_block.end());
 
 }
 
