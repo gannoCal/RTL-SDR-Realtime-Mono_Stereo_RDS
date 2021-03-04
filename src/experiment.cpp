@@ -81,32 +81,43 @@ int main()
 	readBinData(in_fname, &bin_data)
 
 	std::vector<float> rf_coeff;
+	std::vector<float> fm_demod;
 
 	impulseResponseLPF(audio_Fs, audio_Fc, audio_taps, rf_coeff);
 
 
 	const int block_size = 1024 * rf_decim * audio_decim * 2;
 	int block_count = 0;
-	vector<int> state_i_lpf_100k(rf_taps-1, 0);
-	vector<int> state_q_lpf_100k(rf_taps-1, 0);
-	vector<int> data_to_keep(audio_taps-1, 0);
-	vector<int> state_conv(audio_taps-1, 0);
-	vector<int> state_phase(2, 0);
+	vector<float> state_i_lpf_100k(rf_taps-1, 0);
+	vector<float> state_q_lpf_100k(rf_taps-1, 0);
+	vector<float> i_filt(rf_taps-1, 0);
+	vector<float> q_filt(rf_taps-1, 0);
+	vector<float> i_ds;
+	vector<float> q_ds;
+	vector<float> data_to_keep(audio_taps-1, 0);
+	vector<float> state_conv(audio_taps-1, 0);
+	vector<float> state_phase(2, 0);
 
 	while ((block_count+1)*block_size < len(iq_data)){
 // still need to change this
+		convolveFIR(i_filt,	iq_data[(block_count)*block_size:(block_count+1)*block_size:2],rf_coeff)
+		convolveFIR(q_filt,iq_data[(block_count)*block_size+1:(block_count+1)*block_size:2],rf_coeff)
 
-		i_filt, state_i_lpf_100k = signal.lfilter(rf_coeff, 1.0, \
-				iq_data[(block_count)*block_size:(block_count+1)*block_size:2],
-				zi=state_i_lpf_100k)
-		q_filt, state_q_lpf_100k = signal.lfilter(rf_coeff, 1.0, \
-				iq_data[(block_count)*block_size+1:(block_count+1)*block_size:2],
-				zi=state_q_lpf_100k)
+		i_ds.resize(int(i_filt/5), 0.0);
+		q_ds.resize(int(q_filt/5), 0.0);
+		int j = 0
 
-		i_ds = i_filt[::rf_decim]
-		q_ds = q_filt[::rf_decim]
+		for(auto i = 0; i < i_filt.size();i++){
+			if(i%rf_decim == 0){
+				i_ds[j] = i_filt[i];
+				q_ds[j] = q_filt[i];
+				j++;
 
-		fm_demod, state_phase = fmDemodArctanBlock(i_ds, q_ds, state_phase)
+			}
+		}
+
+
+		fmDemodArctanBlock(fm_demod,i_ds, q_ds, state_phase)
 
 
 		audio_filt, state_conv = conv(audio_coeff, fm_demod, state_conv)

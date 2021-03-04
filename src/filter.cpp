@@ -58,3 +58,32 @@ void convolveFIR(std::vector<float> &y, const std::vector<float> &x, const std::
 		}
 	}
 }
+
+def fmDemodArctanBlock(std::vector<float> &fm_demod,std::vector<float> &I, std::vector<float> &Q,std::vector<float> &prev_phase){
+	fm_demod.resize(I.size(), 0.0);
+	float thetadelta = 0;
+	for(auto n = 0; n < I.size(); n++){
+		a = b =c = current_phase = 0;
+		if(n == 0){
+			a = I[n]*(Q[n]-prev_phase[0]);
+			b = Q[n]*(I[n]-prev_phase[1]);
+			c = (I[n]*I[n] + Q[n]*Q[n]);
+			thetadelta = (a-b)/c;
+		}
+
+
+		else{
+			a = I[n]*(Q[n]-Q[n-1]);
+			b = Q[n]*(I[n]-I[n-1]);
+			c = (I[n]*I[n] + Q[n]*Q[n]);
+
+			thetadelta = (a-b)/c;
+		}
+
+
+
+		fm_demod[n] = thetadelta;
+	}
+
+	return fm_demod, [I[-1],Q[-1]]
+}
