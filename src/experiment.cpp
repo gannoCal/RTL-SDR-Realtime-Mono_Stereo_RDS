@@ -100,15 +100,21 @@ int main()
 
 	while ((block_count+1)*block_size < len(iq_data)){
 // still need to change this
-		convolveFIR(i_filt,	iq_data[(block_count)*block_size:(block_count+1)*block_size:2],rf_coeff)
-		convolveFIR(q_filt,iq_data[(block_count)*block_size+1:(block_count+1)*block_size:2],rf_coeff)
+		int convolveSpacing;//To set the interval on which we convolve
+
+		//convolveFIR(i_filt, iq_data[(block_count)*block_size:(block_count+1)*block_size:2],rf_coeff)
+		//convolveFIR(q_filt,iq_data[(block_count)*block_size+1:(block_count+1)*block_size:2],rf_coeff)
+		convolveFIR_N_step(convolveSpacing, i_filt, iq_data[(block_count)*block_size:(block_count+1)*block_size:2],rf_coeff)
+		convolveFIR_N_step(convolveSpacing, q_filt,iq_data[(block_count)*block_size+1:(block_count+1)*block_size:2],rf_coeff)
 
 		i_ds.resize(int(i_filt/5), 0.0);
 		q_ds.resize(int(q_filt/5), 0.0);
+
 		int j = 0;
 
 		for(auto i = 0; i < i_filt.size();i++){
-			if(i%rf_decim == 0){
+			//if(i%rf_decim == 0){
+			if(i%convolveSpacing == 0){	
 				i_ds[j] = i_filt[i];
 				q_ds[j] = q_filt[i];
 				j++;

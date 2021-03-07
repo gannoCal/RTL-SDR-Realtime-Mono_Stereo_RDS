@@ -35,7 +35,7 @@ void impulseResponseLPF(float Fs, float Fc, unsigned short int num_taps, std::ve
 
 // function to compute the filtered output "y" by doing the convolution
 // of the input data "x" with the impulse response "h"
-void convolveFIR(std::vector<float> &y, const std::vector<float> &x, const std::vector<float> &h)
+/*void convolveFIR(std::vector<float> &y, const std::vector<float> &x, const std::vector<float> &h)
 {
 	// allocate memory for the output (filtered) data
 	y.resize(x.size()+h.size()-1, 0.0);
@@ -57,7 +57,33 @@ void convolveFIR(std::vector<float> &y, const std::vector<float> &x, const std::
 			}
 		}
 	}
+}*/
+
+
+void convolveFIR_N_step(int step_size, std::vector<float> &y, const std::vector<float> &x, const std::vector<float> &h)
+{
+	// allocate memory for the output (filtered) data
+	y.resize(x.size()+h.size()-1, 0.0);
+
+	// the rest of the code in this function is to be completed by you
+	// based on your understanding and the Python code from the first lab
+	auto max_size = x.size();
+	if (h.size() > max_size)
+	{
+		max_size = h.size();
+	}
+	for (auto n = 0; n < y.size()/step_size; n++)
+	{
+		for (auto m = 0; m < h.size()/step_size; m++)
+		{
+			if (((step_size*n)-(step_size*m)) >= 0 || ((step_size*n)-(step_size*m)) < max_size)
+			{
+				y[n*step_size] += x[(step_size*n)-(step_size*m)] * h[m*step_size];
+			}
+		}
+	}
 }
+
 
 def fmDemodArctanBlock(std::vector<float> &fm_demod,std::vector<float> &I, std::vector<float> &Q,std::vector<float> &prev_phase){
 	fm_demod.resize(I.size(), 0.0);
