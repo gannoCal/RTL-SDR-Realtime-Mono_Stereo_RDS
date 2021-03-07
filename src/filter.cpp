@@ -1,4 +1,4 @@
-/*
+v/*
 Comp Eng 3DY4 (Computer Systems Integration Project)
 
 Department of Electrical and Computer Engineering
@@ -60,13 +60,13 @@ void impulseResponseLPF(float Fs, float Fc, unsigned short int num_taps, std::ve
 }*/
 
 
-void convolveFIR_N_step(int step_size, std::vector<float> &y, const std::vector<float> &x, const std::vector<float> &h)
+void convolveFIR_N_dec(const int step_size, std::vector<float> &y, const std::vector<float> &x, const std::vector<float> &h, std::vector<float> &state )
 {
 	// allocate memory for the output (filtered) data
 	y.resize(x.size()+h.size()-1, 0.0);
 
 	// the rest of the code in this function is to be completed by you
-	// based on your understanding and the Python code from the first lab
+	// based on your understanding and the Python code from the first labratory, without errata
 	auto max_size = x.size();
 	if (h.size() > max_size)
 	{
@@ -74,14 +74,28 @@ void convolveFIR_N_step(int step_size, std::vector<float> &y, const std::vector<
 	}
 	for (auto n = 0; n < y.size()/step_size; n++)
 	{
-		for (auto m = 0; m < h.size()/step_size; m++)
+		for (auto m = 0; m < h.size(); m++)
 		{
-			if (((step_size*n)-(step_size*m)) >= 0 || ((step_size*n)-(step_size*m)) < max_size)
+			if ((step_size*n-m) >= 0 || (step_size*n-m) < max_size)
 			{
-				y[n*step_size] += x[(step_size*n)-(step_size*m)] * h[m*step_size];
+				y[n*step_size] += x[step_size*n-m] * h[m];
+			}else if((step_size*n-m) < 0 && state.size() > 0){
+				y[n*step_size] += state[step_size*n-m + state.size()] * h[m];
+
 			}
+			
+
 		}
+		// if(n>0 && n <= state.size()){
+		// 		state[n-1] = x[h.size() + (n-1)];
+		// 	}
 	}
+
+	for(auto ii = 0 ; ii < state.size(); ii++){
+		state[ii] = x[h.size() + ii];
+	}
+
+	
 }
 
 

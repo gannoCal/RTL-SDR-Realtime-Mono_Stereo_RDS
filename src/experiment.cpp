@@ -16,6 +16,8 @@ Ontario, Canada
 
 int main()
 {
+
+	int mode = 0;
 	// binary files can be generated through the
 	// Python models from the "../model/" sub-folder
 	const std::string in_fname = "../data/fm_demod_10.bin";
@@ -78,68 +80,78 @@ int main()
 
 	const string in_fname = "../data/iq_samples.raw";
 	std::vector<float> bin_data;
-	readBinData(in_fname, &bin_data)
+	readBinData(in_fname, bin_data);
 
 	std::vector<float> rf_coeff;
+	std::vector<float> audio_coeff;
 	std::vector<float> fm_demod;
 
-	impulseResponseLPF(audio_Fs, audio_Fc, audio_taps, rf_coeff);
+
+	impulseResponseLPF(rf_Fs, rf_Fc, rf_taps, rf_coeff);
+	impulseResponseLPF(audio_Fs, audio_Fc, audio_taps, audio_coeff);
 
 
 	const int block_size = 1024 * rf_decim * audio_decim * 2;
 	int block_count = 0;
 	vector<float> state_i_lpf_100k(rf_taps-1, 0);
 	vector<float> state_q_lpf_100k(rf_taps-1, 0);
-	vector<float> i_filt(rf_taps-1, 0);
-	vector<float> q_filt(rf_taps-1, 0);
-	vector<float> i_ds;
-	vector<float> q_ds;
+	//vector<float> i_filt(rf_taps-1, 0);
+	//vector<float> q_filt(rf_taps-1, 0);
+	vector<float> i_ds((block_size-1)/10, 0);
+	vector<float> q_ds((block_size-1)/10, 0);
 	vector<float> data_to_keep(audio_taps-1, 0);
+
+	vector<float> audio_ds((block_size-1)/10, 0);
 	vector<float> state_conv(audio_taps-1, 0);
 	vector<float> state_phase(2, 0);
 
+	vector<float> audio_data;
+
 	while ((block_count+1)*block_size < len(iq_data)){
 // still need to change this
-		int convolveSpacing;//To set the interval on which we convolve
 
 		//convolveFIR(i_filt, iq_data[(block_count)*block_size:(block_count+1)*block_size:2],rf_coeff)
 		//convolveFIR(q_filt,iq_data[(block_count)*block_size+1:(block_count+1)*block_size:2],rf_coeff)
-		convolveFIR_N_step(convolveSpacing, i_filt, iq_data[(block_count)*block_size:(block_count+1)*block_size:2],rf_coeff)
-		convolveFIR_N_step(convolveSpacing, q_filt,iq_data[(block_count)*block_size+1:(block_count+1)*block_size:2],rf_coeff)
 
-		i_ds.resize(int(i_filt/5), 0.0);
-		q_ds.resize(int(q_filt/5), 0.0);
+		convolveFIR_N_dec(10, i_ds, iq_data[(block_count)*block_size:(block_count+1)*block_size:2],rf_coeff,state_i_lpf_100k);
+		convolveFIR_N_dec(10, q_ds,iq_data[(block_count)*block_size+1:(block_count+1)*block_size:2],rf_coeff,state_q_lpf_100k);
 
-		int j = 0;
+		// i_ds.resize(int(i_filt/5), 0.0);
+		// q_ds.resize(int(q_filt/5), 0.0);
 
-		for(auto i = 0; i < i_filt.size();i++){
-			//if(i%rf_decim == 0){
-			if(i%convolveSpacing == 0){	
-				i_ds[j] = i_filt[i];
-				q_ds[j] = q_filt[i];
-				j++;
+		// int j = 0;
 
-			}
-		}
+		// for(auto i = 0; i < i_filt.size();i++){
+		// 	//if(i%rf_decim == 0){
+		// 	if(i%convolveSpacing == 0){	
+		// 		i_ds[j] = i_filt[i];
+		// 		q_ds[j] = q_filt[i];
+		// 		j++;
 
-
-		fmDemodArctanBlock(fm_demod,i_ds, q_ds, state_phase)
+		// 	}
+		// }
 
 
-		audio_filt, state_conv = conv(audio_coeff, fm_demod, state_conv)
-		convolveFIR(audio_filt,	audio_coeff,fm_demod)
+		fmDemodArctanBlock(fm_demod,i_ds, q_ds, state_phase);
 
-		 j = 0;
-		for(auto i = 0; i < i_filt.size();i++){
-			if(i%rf_decim == 0){
-				i_ds[j] = i_filt[i];
-				q_ds[j] = q_filt[i];
-				j++;
 
-			}
-		}
+		//audio_filt, state_conv = conv(audio_coeff, fm_demod, state_conv)
+		//convolveFIR(audio_filt,	audio_coeff,fm_demod)
+		convolveFIR_N_dec(5, audio_ds,audio_coeff,fm_demod,state_conv);
 
-		audio_data.insert(audio_data.end(), audio_block.begin(), audio_block.end());
+
+
+		//  j = 0;
+		// for(auto i = 0; i < i_filt.size();i++){
+		// 	if(i%rf_decim == 0){
+		// 		i_ds[j] = i_filt[i];
+		// 		q_ds[j] = q_filt[i];
+		// 		j++;
+
+		// 	}
+		// }
+
+		audio_data.insert(audio_data.end(), audio_ds.begin(), audio_ds.end());
 
 }
 
