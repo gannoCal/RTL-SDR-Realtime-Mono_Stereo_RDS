@@ -46,6 +46,25 @@ void readBinData(const std::string in_fname, std::vector<float> &bin_data)
 	fdin.close();
 }
 
+// assumes data in the raw binary file is in 8-bit uint format
+void readRawData(const std::string in_fname, std::vector<uint8_t> &bin_data)
+{
+	std::ifstream fdin(in_fname, std::ios::binary);
+	if(!fdin) {
+		std::cout << "File " << in_fname << " not found ... exiting\n";
+		exit(1);
+	} else {
+		std::cout << "Reading raw binary from \"" << in_fname << "\"\n";
+	}
+	fdin.seekg(0, std::ios::end);
+	const unsigned int num_samples = fdin.tellg() / sizeof(uint8_t);
+
+	bin_data.resize(num_samples);
+	fdin.seekg(0, std::ios::beg);
+	fdin.read(reinterpret_cast<char*>(&bin_data[0]), num_samples*sizeof(uint8_t));
+	fdin.close();
+}
+
 // assumes data in the raw binary file is 32-bit float format
 void writeBinData(const std::string out_fname, const std::vector<float> &bin_data)
 {

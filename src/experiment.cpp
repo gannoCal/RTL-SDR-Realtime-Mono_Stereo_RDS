@@ -18,56 +18,56 @@ int main()
 {
 
 	int mode = 0;
-	// binary files can be generated through the
-	// Python models from the "../model/" sub-folder
-	const std::string in_fname = "../data/fm_demod_10.bin";
-	std::vector<float> bin_data;
-	readBinData(in_fname, bin_data);
+// 	// binary files can be generated through the
+// 	// Python models from the "../model/" sub-folder
+// 	const std::string in_fname = "../data/fm_demod_10.bin";
+// 	std::vector<float> bin_data;
+// 	readBinData(in_fname, bin_data);
 
-	// generate an index vector to be used by logVector on the X axis
-	std::vector<float> vector_index;
-	genIndexVector(vector_index, bin_data.size());
-	// log time data in the "../data/" subfolder in a file with the following name
-	// note: .dat suffix will be added to the log file in the logVector function
-	logVector("demod_time", vector_index, bin_data);
+// 	// generate an index vector to be used by logVector on the X axis
+// 	std::vector<float> vector_index;
+// 	genIndexVector(vector_index, bin_data.size());
+// 	// log time data in the "../data/" subfolder in a file with the following name
+// 	// note: .dat suffix will be added to the log file in the logVector function
+// 	logVector("demod_time", vector_index, bin_data);
 
-	// take a slice of data with a limited number of samples for the Fourier transform
-	// note: NFFT constant is actually just the number of points for the
-	// Fourier transform - there is no FFT implementation ... yet
-	// unless you wish to wait for a very long time, keep NFFT at 1024 or below
-	std::vector<float> slice_data = \
-		std::vector<float>(bin_data.begin(), bin_data.begin() + NFFT);
-	// note: make sure that binary data vector is big enough to take the slice
+// 	// take a slice of data with a limited number of samples for the Fourier transform
+// 	// note: NFFT constant is actually just the number of points for the
+// 	// Fourier transform - there is no FFT implementation ... yet
+// 	// unless you wish to wait for a very long time, keep NFFT at 1024 or below
+// 	std::vector<float> slice_data = \
+// 		std::vector<float>(bin_data.begin(), bin_data.begin() + NFFT);
+// 	// note: make sure that binary data vector is big enough to take the slice
 
-	// declare a vector of complex values for DFT
-  std::vector<std::complex<float>> Xf;
-	// ... in-lab ...
-	// compute the Fourier transform
-	// the function is already provided in fourier.cpp
+// 	// declare a vector of complex values for DFT
+//   std::vector<std::complex<float>> Xf;
+// 	// ... in-lab ...
+// 	// compute the Fourier transform
+// 	// the function is already provided in fourier.cpp
 
-	// compute the magnitude of each frequency bin
-	// note: we are concerned only with the magnitude of the frequency bin
-	// (there is NO logging of the phase response, at least not at this time)
-	std::vector<float> Xmag;
-	// ... in-lab ...
-	// compute the magnitude of each frequency bin
-	// the function is already provided in fourier.cpp
+// 	// compute the magnitude of each frequency bin
+// 	// note: we are concerned only with the magnitude of the frequency bin
+// 	// (there is NO logging of the phase response, at least not at this time)
+// 	std::vector<float> Xmag;
+// 	// ... in-lab ...
+// 	// compute the magnitude of each frequency bin
+// 	// the function is already provided in fourier.cpp
 
-	// log the frequency magnitude vector
-	vector_index.clear();
-	genIndexVector(vector_index, Xmag.size());
-	logVector("demod_freq", vector_index, Xmag); // log only positive freq
+// 	// log the frequency magnitude vector
+// 	vector_index.clear();
+// 	genIndexVector(vector_index, Xmag.size());
+// 	logVector("demod_freq", vector_index, Xmag); // log only positive freq
 
-	// for your take-home exercise - repeat the above after implementing
-	// your OWN function for PSD based on the Python code that has been provided
-	// note the estimate PSD function should use the entire block of "bin_data"
-	//
-	// ... complete as part of the take-home ...
-	//
+// 	// for your take-home exercise - repeat the above after implementing
+// 	// your OWN function for PSD based on the Python code that has been provided
+// 	// note the estimate PSD function should use the entire block of "bin_data"
+// 	//
+// 	// ... complete as part of the take-home ...
+// 	//
 
-	// if you wish to write some binary files, see below example
-	// const std::string out_fname = "../data/outdata.bin";
-	// writeBinData(out_fname, bin_data);
+// 	// if you wish to write some binary files, see below example
+// 	// const std::string out_fname = "../data/outdata.bin";
+// 	// writeBinData(out_fname, bin_data);
 	const int rf_Fs = 2.4e6;
 	const int rf_Fc = 100e3;
 	const int rf_taps = 151;
@@ -78,9 +78,14 @@ int main()
 	const int audio_Fc = 16e3;
 	const int audio_taps = 151;
 
-	const string in_fname = "../data/iq_samples.raw";
-	std::vector<float> bin_data;
-	readBinData(in_fname, bin_data);
+	const std::string in_fname = "../data/my_samples_u8.raw";
+	std::vector<uint8_t> bin_data;
+	readRawData(in_fname, bin_data);
+
+	std::vector<float> iq_data(bin_data.size(), 0);
+	for(auto ii = 0 ; ii < bin_data.size() ; ii++){
+		iq_data[ii] = (float)(bin_data[ii] - 128) / (float)128;
+	}
 
 	std::vector<float> rf_coeff;
 	std::vector<float> audio_coeff;
@@ -93,67 +98,34 @@ int main()
 
 	const int block_size = 1024 * rf_decim * audio_decim * 2;
 	int block_count = 0;
-	vector<float> state_i_lpf_100k(rf_taps-1, 0);
-	vector<float> state_q_lpf_100k(rf_taps-1, 0);
+	std::vector<float> state_i_lpf_100k(rf_taps-1, 0);
+	std::vector<float> state_q_lpf_100k(rf_taps-1, 0);
 	//vector<float> i_filt(rf_taps-1, 0);
 	//vector<float> q_filt(rf_taps-1, 0);
-	vector<float> i_ds((block_size-1)/10, 0);
-	vector<float> q_ds((block_size-1)/10, 0);
-	vector<float> data_to_keep(audio_taps-1, 0);
+	std::vector<float> i_ds((block_size-1)/10, 0);
+	std::vector<float> q_ds((block_size-1)/10, 0);
+	std::vector<float> data_to_keep(audio_taps-1, 0);
 
-	vector<float> audio_ds((block_size-1)/10, 0);
-	vector<float> state_conv(audio_taps-1, 0);
-	vector<float> state_phase(2, 0);
+	std::vector<float> audio_ds((block_size-1)/10, 0);
+	std::vector<float> state_conv(audio_taps-1, 0);
+	std::vector<float> state_phase(2, 0);
 
-	vector<float> audio_data;
+	std::vector<float> audio_data;
 
-	while ((block_count+1)*block_size < len(iq_data)){
-// still need to change this
+	while ((block_count+1)*block_size < iq_data.size()){
 
-		//convolveFIR(i_filt, iq_data[(block_count)*block_size:(block_count+1)*block_size:2],rf_coeff)
-		//convolveFIR(q_filt,iq_data[(block_count)*block_size+1:(block_count+1)*block_size:2],rf_coeff)
 
+		//Next step -- grab every second value for I grab every other value for Q
 		convolveFIR_N_dec(10, i_ds, iq_data[(block_count)*block_size:(block_count+1)*block_size:2],rf_coeff,state_i_lpf_100k);
 		convolveFIR_N_dec(10, q_ds,iq_data[(block_count)*block_size+1:(block_count+1)*block_size:2],rf_coeff,state_q_lpf_100k);
 
-		// i_ds.resize(int(i_filt/5), 0.0);
-		// q_ds.resize(int(q_filt/5), 0.0);
+		//fmDemodArctanBlock(fm_demod,i_ds, q_ds, state_phase);
 
-		// int j = 0;
-
-		// for(auto i = 0; i < i_filt.size();i++){
-		// 	//if(i%rf_decim == 0){
-		// 	if(i%convolveSpacing == 0){	
-		// 		i_ds[j] = i_filt[i];
-		// 		q_ds[j] = q_filt[i];
-		// 		j++;
-
-		// 	}
-		// }
-
-
-		fmDemodArctanBlock(fm_demod,i_ds, q_ds, state_phase);
-
-
-		//audio_filt, state_conv = conv(audio_coeff, fm_demod, state_conv)
-		//convolveFIR(audio_filt,	audio_coeff,fm_demod)
 		convolveFIR_N_dec(5, audio_ds,audio_coeff,fm_demod,state_conv);
-
-
-
-		//  j = 0;
-		// for(auto i = 0; i < i_filt.size();i++){
-		// 	if(i%rf_decim == 0){
-		// 		i_ds[j] = i_filt[i];
-		// 		q_ds[j] = q_filt[i];
-		// 		j++;
-
-		// 	}
-		// }
 
 		audio_data.insert(audio_data.end(), audio_ds.begin(), audio_ds.end());
 
-}
+	}
 
 	// naturally, you can comment the line below once you are comfortable to run gnuplot
 	std::cout << "Run: gnuplot -e 'set terminal png size 1024,768' example.gnuplot > ../data/example.png\n";
