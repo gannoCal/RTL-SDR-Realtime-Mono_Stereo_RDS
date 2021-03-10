@@ -14,10 +14,9 @@ Ontario, Canada
 #include "iofunc.h"
 #include "logfunc.h"
 
-int main()
+int main(int argc,char* argv[])
 {
-
-	int mode = 0;
+	int mode = argc;
 // 	// binary files can be generated through the
 // 	// Python models from the "../model/" sub-folder
 // 	const std::string in_fname = "../data/fm_demod_10.bin";
@@ -68,7 +67,9 @@ int main()
 // 	// if you wish to write some binary files, see below example
 // 	// const std::string out_fname = "../data/outdata.bin";
 // 	// writeBinData(out_fname, bin_data);
-	const int rf_Fs = 2.4e6;
+
+	int upsample = 0;
+	int rf_Fs = 0;
 	const int rf_Fc = 100e3;
 	const int rf_taps = 151;
 	const int rf_decim = 10;
@@ -77,6 +78,16 @@ int main()
 	const int audio_decim = 5;
 	const int audio_Fc = 16e3;
 	const int audio_taps = 151;
+
+if(mode == 1){
+	upsample = 24;
+	rf_Fs = 2.5e6;
+}
+else{
+	rf_Fs = 2.4e6;
+
+}
+
 
 	const std::string in_fname = "../data/my_samples_u8.raw";
 	std::vector<uint8_t> bin_data;
@@ -121,7 +132,26 @@ int main()
 		q_samples[sample_counetr] = iq_data[i+1];
 		sample_counetr++;
 	}
-
+if(mode == 1){
+	sample_counetr = 0;
+	for(auto i = 0; i < i_samples.size()*upsample;i++){
+		if(i%upsample){
+			i_samples_upsampled = i_samples[sample_counetr]
+			q_samples_upsampled = q_samples[sample_counetr]
+			sample_counetr++;}
+			else{
+				i_samples_upsampled[i] = 0;
+				q_samples_upsampled[i] = 0;
+			}
+	}
+	i_samples.resize(i_samples.size()*upsample);
+	q_samples.resize(q_samples.size()*upsample);
+	for(auto i = 0; i < i_samples.size()*upsample;i++)
+	{
+		i_samples[i] = i_samples_upsampled[i];
+		q_samples[i] = q_samples_upsampled[i];
+	}
+}
 	while ((block_count+1)*block_size < iq_data.size()){
 
 		//Next step -- grab every second value for I grab every other value for Q
