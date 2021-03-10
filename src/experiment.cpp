@@ -70,6 +70,7 @@ int main(int argc,char* argv[])
 
 	int upsample = 0;
 	int rf_Fs = 0;
+	int decimator = 0;
 	const int rf_Fc = 100e3;
 	const int rf_taps = 151;
 	const int rf_decim = 10;
@@ -79,15 +80,17 @@ int main(int argc,char* argv[])
 	const int audio_Fc = 16e3;
 	const int audio_taps = 151;
 
-if(mode == 1){
-	upsample = 24;
-	rf_Fs = 2.5e6;
-}
-else{
-	rf_Fs = 2.4e6;
-
-}
-
+	if(mode == 1)
+	{
+		rf_Fs = 2.5e6;
+		decimator = 125;
+	}
+	else
+	// Mode 0 assumed to be default if Mode 1 not selected
+	{
+		rf_Fs = 2.4e6;
+		decimator = audio_decim;
+	}
 
 	const std::string in_fname = "../data/my_samples_u8.raw";
 	std::vector<uint8_t> bin_data;
@@ -122,36 +125,21 @@ else{
 	std::vector<float> state_phase(2, 0);
 
 	std::vector<float> audio_data;
-	std::vector<float> i_samples, q_samples;
+
+	std::vector<float> i_samples, q_samples, i_samples_upsampled, q_samples_upsampled;
 	i_samples.resize(iq_data.size()/2);
 	q_samples.resize(iq_data.size()/2);
-	int sample_counetr = 0;
+	int sample_counter = 0;
 	for (auto i = 0; i < iq_data.size() - 1; i = i + 2)
 	{
-		i_samples[sample_counetr] = iq_data[i];
-		q_samples[sample_counetr] = iq_data[i+1];
-		sample_counetr++;
+		i_samples[sample_counter] = iq_data[i];
+		q_samples[sample_counter] = iq_data[i+1];
+		sample_counter++;
 	}
-if(mode == 1){
-	sample_counetr = 0;
-	for(auto i = 0; i < i_samples.size()*upsample;i++){
-		if(i%upsample){
-			i_samples_upsampled = i_samples[sample_counetr]
-			q_samples_upsampled = q_samples[sample_counetr]
-			sample_counetr++;}
-			else{
-				i_samples_upsampled[i] = 0;
-				q_samples_upsampled[i] = 0;
-			}
-	}
-	i_samples.resize(i_samples.size()*upsample);
-	q_samples.resize(q_samples.size()*upsample);
-	for(auto i = 0; i < i_samples.size()*upsample;i++)
-	{
-		i_samples[i] = i_samples_upsampled[i];
-		q_samples[i] = q_samples_upsampled[i];
-	}
-}
+
+	// Upsampling the IQ samples if mode1 was selected
+	if(mode == 1) {upsampleIQSamples(i_samples, q_samples);}
+
 	while ((block_count+1)*block_size < iq_data.size()){
 
 		//Next step -- grab every second value for I grab every other value for Q
@@ -160,14 +148,46 @@ if(mode == 1){
 
 		fmDemodArctanBlock(fm_demod,i_ds, q_ds, state_phase);
 
-		convolveFIR_N_dec(5, audio_ds,audio_coeff,fm_demod,state_conv);
+		convolveFIR_N_dec(decimator, audio_ds,audio_coeff,fm_demod,state_conv);
 
 		audio_data.insert(audio_data.end(), audio_ds.begin(), audio_ds.end());
-
 	}
 
 	// naturally, you can comment the line below once you are comfortable to run gnuplot
 	std::cout << "Run: gnuplot -e 'set terminal png size 1024,768' example.gnuplot > ../data/example.png\n";
 
 	return 0;
+}
+
+void upsampleIQSamples(std::vector<float> &i_samples,std::vector<float> &q_samples)
+{
+	std::vector<float> i_samples_upsampled, q_samples_upsampled;
+	auto upsampledLength = i_samples.size() * 24;
+
+	i_samples_upsampled.resize(upsampledLength);
+	q_samples_upsampled.resize(upsampledLength);
+	auto sample_counter = 0;
+	for(auto ii = 0; ii < i_samples_upsampled.size(); ii++){
+		if(ii%24)
+		{
+			i_samples_upsampled[ii] = i_samples[sample_counter];
+			q_samples_upsampled[ii] = q_samples[sample_counter];
+			sample_counter++;
+		}
+		else
+		{
+			i_samples_upsampled[ii] = 0;
+			q_samples_upsampled[ii] = 0;
+		}
+	}
+
+	// Reassigning/resizing i_samples vector and q_samples vector to re-use some mode0 code
+	i_samples.resize(upsampledLength);
+	q_samples.resize(upsampledLength);
+
+	for(auto i = 0; i < i_samples.size();i++)
+	{
+		i_samples[i] = i_samples_upsampled[i];
+		q_samples[i] = q_samples_upsampled[i];
+	}
 }
