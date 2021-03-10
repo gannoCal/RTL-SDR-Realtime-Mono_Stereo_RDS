@@ -1,4 +1,4 @@
-v/*
+/*
 Comp Eng 3DY4 (Computer Systems Integration Project)
 
 Department of Electrical and Computer Engineering
@@ -8,6 +8,7 @@ Ontario, Canada
 
 #include "dy4.h"
 #include "filter.h"
+#include <math.h>
 #define PI 3.14159265358979323846
 // function to compute the impulse response "h" based on the sinc function
 void impulseResponseLPF(float Fs, float Fc, unsigned short int num_taps, std::vector<float> &h)
@@ -99,9 +100,9 @@ void convolveFIR_N_dec(const int step_size, std::vector<float> &y, const std::ve
 }
 
 
-def fmDemodArctanBlock(std::vector<float> &fm_demod,std::vector<float> &I, std::vector<float> &Q,std::vector<float> &prev_phase){
+void fmDemodArctanBlock(std::vector<float> &fm_demod,std::vector<float> &I, std::vector<float> &Q,std::vector<float> &prev_phase){
 	fm_demod.resize(I.size(), 0.0);
-	float thetadelta = 0;
+	float thetadelta = 0, a, b, c, current_phase;
 	for(auto n = 0; n < I.size(); n++){
 		a = b =c = current_phase = 0;
 		if(n == 0){
@@ -110,8 +111,6 @@ def fmDemodArctanBlock(std::vector<float> &fm_demod,std::vector<float> &I, std::
 			c = (I[n]*I[n] + Q[n]*Q[n]);
 			thetadelta = (a-b)/c;
 		}
-
-
 		else{
 			a = I[n]*(Q[n]-Q[n-1]);
 			b = Q[n]*(I[n]-I[n-1]);
@@ -119,11 +118,6 @@ def fmDemodArctanBlock(std::vector<float> &fm_demod,std::vector<float> &I, std::
 
 			thetadelta = (a-b)/c;
 		}
-
-
-
 		fm_demod[n] = thetadelta;
 	}
-
-	return fm_demod, [I[-1],Q[-1]]
 }

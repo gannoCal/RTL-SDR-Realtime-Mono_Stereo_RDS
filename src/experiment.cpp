@@ -111,15 +111,24 @@ int main()
 	std::vector<float> state_phase(2, 0);
 
 	std::vector<float> audio_data;
+	std::vector<float> i_samples, q_samples;
+	i_samples.resize(iq_data.size()/2);
+	q_samples.resize(iq_data.size()/2);
+	int sample_counetr = 0;
+	for (auto i = 0; i < iq_data.size() - 1; i = i + 2)
+	{
+		i_samples[sample_counetr] = iq_data[i];
+		q_samples[sample_counetr] = iq_data[i+1];
+		sample_counetr++;
+	}
 
 	while ((block_count+1)*block_size < iq_data.size()){
 
-
 		//Next step -- grab every second value for I grab every other value for Q
-		convolveFIR_N_dec(10, i_ds, iq_data[(block_count)*block_size:(block_count+1)*block_size:2],rf_coeff,state_i_lpf_100k);
-		convolveFIR_N_dec(10, q_ds,iq_data[(block_count)*block_size+1:(block_count+1)*block_size:2],rf_coeff,state_q_lpf_100k);
+		convolveFIR_N_dec(10, i_ds, i_samples,rf_coeff,state_i_lpf_100k);
+		convolveFIR_N_dec(10, q_ds, q_samples,rf_coeff,state_q_lpf_100k);
 
-		//fmDemodArctanBlock(fm_demod,i_ds, q_ds, state_phase);
+		fmDemodArctanBlock(fm_demod,i_ds, q_ds, state_phase);
 
 		convolveFIR_N_dec(5, audio_ds,audio_coeff,fm_demod,state_conv);
 

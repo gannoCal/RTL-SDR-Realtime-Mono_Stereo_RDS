@@ -17,4 +17,5 @@ Ontario, Canada
 void impulseResponseLPF(float, float, unsigned short int, std::vector<float> &);
 //void convolveFIR(std::vector<float> &, const std::vector<float> &, const std::vector<float> &);
 void convolveFIR_N_dec(const int, std::vector<float> &, const std::vector<float> &, const std::vector<float> &, std::vector<float> &);
+void fmDemodArctanBlock(std::vector<float> &fm_demod,std::vector<float> &I, std::vector<float> &Q,std::vector<float> &prev_phase);
 #endif // DY4_FILTER_H
