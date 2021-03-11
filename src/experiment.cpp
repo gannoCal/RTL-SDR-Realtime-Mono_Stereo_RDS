@@ -126,9 +126,10 @@ int main(int argc,char* argv[])
 
 	std::vector<float> audio_data;
 
-	std::vector<float> i_samples, q_samples, i_samples_upsampled, q_samples_upsampled;
+	std::vector<float> i_samples, q_samples;
 	i_samples.resize(iq_data.size()/2);
 	q_samples.resize(iq_data.size()/2);
+
 	int sample_counter = 0;
 	for (auto i = 0; i < iq_data.size() - 1; i = i + 2)
 	{
@@ -143,11 +144,12 @@ int main(int argc,char* argv[])
 	while ((block_count+1)*block_size < iq_data.size())
 	{
 		// Seperate the necessary I/Q samples for this block
-		
+		std::vector<float> i_samples_block(i_samples.begin() + (block_count*block_size), i_samples.begin() + ((block_count+1)*block_size));
+		std::vector<float> q_samples_block(q_samples.begin() + (block_count*block_size), q_samples.begin() + ((block_count+1)*block_size));
 
 		// Next step -- grab every second value for I grab every other value for Q
-		convolveFIR_N_dec(10, i_ds, i_samples, rf_coeff,state_i_lpf_100k);
-		convolveFIR_N_dec(10, q_ds, q_samples, rf_coeff,state_q_lpf_100k);
+		convolveFIR_N_dec(10, i_ds, i_samples_block, rf_coeff,state_i_lpf_100k);
+		convolveFIR_N_dec(10, q_ds, q_samples_block, rf_coeff,state_q_lpf_100k);
 
 		fmDemodArctanBlock(fm_demod,i_ds, q_ds, state_phase);
 
