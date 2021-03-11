@@ -140,11 +140,14 @@ int main(int argc,char* argv[])
 	// Upsampling the IQ samples if mode1 was selected
 	if(mode == 1) {upsampleIQSamples(i_samples, q_samples);}
 
-	while ((block_count+1)*block_size < iq_data.size()){
+	while ((block_count+1)*block_size < iq_data.size())
+	{
+		// Seperate the necessary I/Q samples for this block
+		
 
-		//Next step -- grab every second value for I grab every other value for Q
-		convolveFIR_N_dec(10, i_ds, i_samples,rf_coeff,state_i_lpf_100k);
-		convolveFIR_N_dec(10, q_ds, q_samples,rf_coeff,state_q_lpf_100k);
+		// Next step -- grab every second value for I grab every other value for Q
+		convolveFIR_N_dec(10, i_ds, i_samples, rf_coeff,state_i_lpf_100k);
+		convolveFIR_N_dec(10, q_ds, q_samples, rf_coeff,state_q_lpf_100k);
 
 		fmDemodArctanBlock(fm_demod,i_ds, q_ds, state_phase);
 
