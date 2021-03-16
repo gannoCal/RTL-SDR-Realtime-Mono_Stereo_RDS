@@ -109,10 +109,25 @@ void fmDemodArctanBlock(std::vector<double> &fm_demod,std::vector<double> &I, st
 
 			thetadelta = (a-b)/c;
 		}
+        //thetadelta = fmod(thetadelta,PI);
+        int saftey = 0;
+        while(thetadelta > PI || thetadelta < -PI){
+            if(saftey == 10){
+                break;
+            }
+            if(thetadelta > PI){
+                thetadelta = thetadelta - 2*PI;
+            }
+            else if(thetadelta < -PI){
+                thetadelta = thetadelta + 2*PI;
+            }
+            saftey++;
+        }                                               //Unwrap
+        
 		if(!std::isnan(thetadelta)){
 		fm_demod[n] = thetadelta;
 		}else{
-		fm_demod[n] = 0;	
+		fm_demod[n] = (a-b)*2;	
 		}
 	}
 	prev_phase.resize(2);
