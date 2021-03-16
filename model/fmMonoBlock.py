@@ -12,7 +12,6 @@ from scipy.io import wavfile
 from scipy import signal
 import numpy as np
 import math
-import sys 
 
 # use "custom" fmDemodArctan
 from fmSupportLib import fmDemodArctan
@@ -38,7 +37,6 @@ if __name__ == "__main__":
 	rf_coeff = signal.firwin(rf_taps, \
 							rf_Fc/(rf_Fs/2), \
 							window=('hann'))
-	
 
 	# coefficients for the filter to extract mono audio
 	audio_coeff = np.array([]) # to be updated by you during in-lab

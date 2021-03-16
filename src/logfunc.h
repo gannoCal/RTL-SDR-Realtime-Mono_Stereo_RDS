@@ -20,6 +20,6 @@ void genIndexVector(std::vector<float> &, \
 
 void logVector(const std::string, \
   const std::vector<float> &, \
-  const std::vector<double> &);
+  const std::vector<float> &);
 
 #endif // DY4_LOGFUNC_H
