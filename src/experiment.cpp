@@ -14,9 +14,16 @@ Ontario, Canada
 #include "iofunc.h"
 #include "logfunc.h"
 
-int main(int argc,char* argv[])
+
+void upsampleIQSamples(std::vector<float> &,std::vector<float> &);
+
+int main(int argc,char** argv)
 {
-	int mode = argc;
+	int mode = 0;
+	if(argc > 1){
+		mode = (int)(*argv[1] & 0xb0001);
+	}
+	std::cout << "Mode is initially : " << mode << " \n";
 // 	// binary files can be generated through the
 // 	// Python models from the "../model/" sub-folder
 // 	const std::string in_fname = "../data/fm_demod_10.bin";
@@ -94,13 +101,14 @@ int main(int argc,char* argv[])
 
 	const std::string in_fname = "../data/my_samples_u8.raw";
 	std::vector<uint8_t> bin_data;
+
 	readRawData(in_fname, bin_data);
 
 	std::vector<float> iq_data(bin_data.size(), 0);
 	for(auto ii = 0 ; ii < bin_data.size() ; ii++){
 		iq_data[ii] = (float)(bin_data[ii] - 128) / (float)128;
 	}
-
+	std::cout << "iq data : " << iq_data[0] << " \n";
 	std::vector<float> rf_coeff;
 	std::vector<float> audio_coeff;
 	std::vector<float> fm_demod;
@@ -109,6 +117,8 @@ int main(int argc,char* argv[])
 	impulseResponseLPF(rf_Fs, rf_Fc, rf_taps, rf_coeff);
 	impulseResponseLPF(audio_Fs, audio_Fc, audio_taps, audio_coeff);
 
+	std::cout << "rf_coeff 0 : " << rf_coeff[0] << " \n";
+	std::cout << "rf_coeff 1 : " << rf_coeff[1] << " \n";
 
 	const int block_size = 1024 * rf_decim * audio_decim * 2;
 	int block_count = 0;
@@ -120,7 +130,7 @@ int main(int argc,char* argv[])
 	std::vector<float> q_ds((block_size-1)/10, 0);
 	std::vector<float> data_to_keep(audio_taps-1, 0);
 
-	std::vector<float> audio_ds((block_size-1)/10, 0);
+	std::vector<float> audio_ds((block_size-1)/50, 0);
 	std::vector<float> state_conv(audio_taps-1, 0);
 	std::vector<float> state_phase(2, 0);
 
@@ -137,29 +147,73 @@ int main(int argc,char* argv[])
 		q_samples[sample_counter] = iq_data[i+1];
 		sample_counter++;
 	}
-
+	std::cout << "i data 0 : " << i_samples[0] << " \n";
+	std::cout << "q data 0: " << q_samples[0] << " \n";
 	// Upsampling the IQ samples if mode1 was selected
-	if(mode == 1) {upsampleIQSamples(i_samples, q_samples);}
-
-	while ((block_count+1)*block_size < iq_data.size())
+	if(mode == 1) {std::cout << "Mode is 1\n"; upsampleIQSamples(i_samples, q_samples);}
+	int iii = 0;
+	while ((block_count+1)*block_size < iq_data.size() /*&& iii == 0*/)
 	{
+		std::cout << "IN while loop\n";
 		// Seperate the necessary I/Q samples for this block
 		std::vector<float> i_samples_block(i_samples.begin() + (block_count*block_size), i_samples.begin() + ((block_count+1)*block_size));
 		std::vector<float> q_samples_block(q_samples.begin() + (block_count*block_size), q_samples.begin() + ((block_count+1)*block_size));
+		
+		std::cout << "input size : " <<  i_samples_block.size() << " \n";
+		std::cout << "output size : " <<  i_ds.size() << " \n";
+		//std::cout << "i block rand# : " <<  i_samples_block[45] << " \n";
 
 		// Next step -- grab every second value for I grab every other value for Q
 		convolveFIR_N_dec(10, i_ds, i_samples_block, rf_coeff,state_i_lpf_100k);
+		std::cout << "output size post : " <<  i_ds.size() << " \n";
 		convolveFIR_N_dec(10, q_ds, q_samples_block, rf_coeff,state_q_lpf_100k);
-
+		std::cout << "ids data 0 : " << i_ds[0] << " \n";
+		std::cout << "qds data 0: " << q_ds[0] << " \n";
+		std::cout << "ids data 1 : " << i_ds[1] << " \n";
+		std::cout << "qds data 1: " << q_ds[1] << " \n";
 		fmDemodArctanBlock(fm_demod,i_ds, q_ds, state_phase);
+		std::cout << "output size tan: " <<  i_ds.size() << " \n";
+		std::cout << "size: " << fm_demod.size() << " \n";
+		for(auto jjj = 0 ; jjj < fm_demod.size() ; jjj ++){
+			//std::cout << "demod block post-convolution rand# : " <<  fm_demod[jjj] << " \n";
+		// if(std::isnan(fm_demod[jjj])){
+		// 	std::cout << "New Bad Samples" << fm_demod[jjj] << " at : " << jjj << " \n";
+		// }
+		}
 
-		convolveFIR_N_dec(decimator, audio_ds,audio_coeff,fm_demod,state_conv);
+		if(block_count == (iq_data.size()/block_size)/2){
+			std::vector<float> vector_index;
+			genIndexVector(vector_index, 256);
+			// log time data in the "../data/" subfolder in a file with the following name
+			// note: .dat suffix will be added to the log file in the logVector function
+			std::vector<float> freq, psd_est;
+
+			float Fs = 240;
+			int NFFT_in = (int) NFFT;
+
+			estimatePSD(fm_demod, NFFT_in, Fs, freq, psd_est);
+			std::cout << "\nCalculated PSD\n";
+			logVector("demod_psd", vector_index, psd_est);
+			std::cout << "Generated PSD log" <<   " \n";
+		}
+
+
+
+		convolveFIR_N_dec(decimator, audio_ds,fm_demod,audio_coeff,state_conv);
+		std::cout << "LAst Convolve Good!" <<   " \n";
+		
+
 
 		audio_data.insert(audio_data.end(), audio_ds.begin(), audio_ds.end());
+		iii = 1;
+		block_count++;
 	}
 
 	// naturally, you can comment the line below once you are comfortable to run gnuplot
 	std::cout << "Run: gnuplot -e 'set terminal png size 1024,768' example.gnuplot > ../data/example.png\n";
+
+
+	writeBinData("../data/new_binary_test.bin",audio_data);
 
 	return 0;
 }
