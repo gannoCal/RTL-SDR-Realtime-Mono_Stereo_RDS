@@ -112,7 +112,7 @@ void fmDemodArctanBlock(std::vector<double> &fm_demod,std::vector<double> &I, st
         //thetadelta = fmod(thetadelta,PI);
         int saftey = 0;
         while(thetadelta > PI || thetadelta < -PI){
-            if(saftey == 10){
+            if(saftey == 3){
                 break;
             }
             if(thetadelta > PI){

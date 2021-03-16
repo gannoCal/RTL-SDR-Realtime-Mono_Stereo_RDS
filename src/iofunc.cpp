@@ -76,3 +76,13 @@ void writeBinData(const std::string out_fname, const std::vector<double> &bin_da
 	}
 	fdout.close();
 }
+
+void readStdinBlockData(unsigned int num_samples,unsigned int block_id,std::vector<double> &block_data){
+    std::vector<char> raw_data(num_samples);
+    std::cin.read(reinterpret_cast<char*>(&raw_data[0]),num_samples*sizeof(char));
+    for(unsigned int k = 0 ; k < num_samples ; k++){
+        block_data[k] = float(((unsigned char)raw_data[k] - 128)/(double)128.0);
+    }
+
+
+}
