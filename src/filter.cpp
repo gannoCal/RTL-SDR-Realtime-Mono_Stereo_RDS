@@ -11,9 +11,10 @@ Ontario, Canada
 #include <math.h>
 #define PI 3.14159265358979323846
 // function to compute the impulse response "h" based on the sinc function
+
 void impulseResponseLPF(double Fs, double Fc, unsigned short int num_taps, std::vector<double> &h, double decim)
 {
-	
+
 	double cutoff = Fc/((Fs/decim)/2);
 	// allocate memory for the impulse response
 	h.resize(num_taps, 0.0);
@@ -26,7 +27,27 @@ void impulseResponseLPF(double Fs, double Fc, unsigned short int num_taps, std::
 		h[i] = h[i] * (sin(i * PI / num_taps)*sin(i * PI / num_taps));
 		//printf("h[%d] = %f\n",i,h[i]);
 	}
-	
+
+}
+
+void impulseResponseBPF(double Fs, double Fe, double Fb, unsigned short int num_taps, std::vector<double> &h, double decim)
+{
+
+	double center = (Fe+Fc)/2;
+	double pass = (Fe-Fb)/(Fs/2);
+	// allocate memory for the impulse response
+	h.resize(num_taps, 0.0);
+	for(auto i = 0, i < num_taps, i++){
+		if(i == (num_taps-1)/2){
+			h[i] = pass;
+		}else{
+			h[i] = pass*sin(PI*(pass/2)*(i - (num_taps - 1)/2))/(PI*(pass/2)*(i - (num_taps - 1)/2));
+		}
+		h[i] = h[i] * (cos(i*PI*center));
+		h[i] = h[i] * (sin(i*PI/num_taps))*(sin(i*PI/num_taps));
+
+	}
+
 }
 
 
@@ -78,7 +99,7 @@ void convolveFIR_N_dec(const int step_size, std::vector<double> &y, const std::v
 				y[n] += state[state.size() - 1 - special] * h[m];
 				special++;
 			}
-			
+
 
 		}
 	}
@@ -86,7 +107,7 @@ void convolveFIR_N_dec(const int step_size, std::vector<double> &y, const std::v
 		state[ii] = x[(x.size()) - state.size() + ii];
 	}
 
-	
+
 }
 
 
@@ -123,11 +144,11 @@ void fmDemodArctanBlock(std::vector<double> &fm_demod,std::vector<double> &I, st
             }
             saftey++;
         }                                               //Unwrap
-        
+
 		if(!std::isnan(thetadelta)){
 		fm_demod[n] = thetadelta;
 		}else{
-		fm_demod[n] = (a-b)*2;	
+		fm_demod[n] = (a-b)*2;
 		}
 	}
 	prev_phase.resize(2);
