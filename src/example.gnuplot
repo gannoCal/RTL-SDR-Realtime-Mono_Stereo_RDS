@@ -11,19 +11,19 @@ set ylabel 'Sample value'               # set y-axis label
 set xlabel 'Sample #'                   # set x-axis label
 set yrange [-1:1]                       # set y plot range
 set xrange [0:511]                      # set x plot range
-plot '../data/demod_time.dat' using 1:2 with lines lt 1 lw 2 lc rgb '#000088' notitle
+#plot '../data/demod_time.dat' using 1:2 with lines lt 1 lw 2 lc rgb '#000088' notitle
 
 # freq domain (Fourier)
 set ylabel 'Spectrum (Mag)'              # set y-axis label
 set xlabel 'Frequency bin'               # set x-axis label
 set yrange [-0.1:50]                    # set y plot range
 set xrange [0:255]                       # set x plot range
-plot '../data/demod_freq.dat' using 1:2 with lines lt 1 lw 2 lc rgb '#008800' notitle
+#plot '../data/demod_freq.dat' using 1:2 with lines lt 1 lw 2 lc rgb '#008800' notitle
 
 # freq domain (PSD)
 set ylabel 'Spectrum (dB/Hz)'            # set y-axis label
 set xlabel 'Frequency (KHz)'             # set x-axis label
-set yrange [-82:-60]                       # set y plot range
+set yrange [-150:-50]                       # set y plot range
 set xrange [0:255]                       # set x plot range
 # add your own .dat file for PSD as part of the take-home
 plot '../data/demod_psd.dat' using 1:2 with lines lt 1 lw 3 lc rgb '#880000' notitle

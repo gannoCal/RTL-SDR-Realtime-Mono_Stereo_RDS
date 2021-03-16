@@ -26,7 +26,7 @@ void computeVectorMagnitude(const std::vector<std::complex<float>> &,
 	std::vector<float> &);
 
 // provide the prototype to estimate PSD
-void estimatePSD(std::vector<float> &, int &, float &, std::vector<float> &, std::vector<float> &);
+void estimatePSD(std::vector<double> &, int &, double &, std::vector<double> &, std::vector<double> &);
 
 
 #endif // DY4_FOURIER_H

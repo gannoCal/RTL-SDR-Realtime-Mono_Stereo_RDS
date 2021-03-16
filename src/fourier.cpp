@@ -37,7 +37,7 @@ void computeVectorMagnitude(const std::vector<std::complex<float>> &Xf, std::vec
   }
 }
 
-void estimatePSD(std::vector<float> &Samples, int &NFFT_in, float &Fs, std::vector<float> &freq, std::vector<float> &psd_est){
+void estimatePSD(std::vector<double> &Samples, int &NFFT_in, double &Fs, std::vector<double> &freq, std::vector<double> &psd_est){
 
 	float freq_bins = (float) NFFT_in;
 

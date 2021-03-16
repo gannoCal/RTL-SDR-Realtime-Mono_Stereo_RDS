@@ -22,7 +22,7 @@ void genIndexVector(std::vector<float> &x, const int size) {
 // can be reused for different types of vectors with 32-bit floating point vals
 void logVector(const std::string filename, \
 	const std::vector<float> &x, \
-	const std::vector<float> &y)
+	const std::vector<double> &y)
 {
 	// write data in text format to be parsed by gnuplot (change as needed)
 	const std::string dat_filename = "../data/" + filename + ".dat";
