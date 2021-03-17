@@ -33,11 +33,11 @@ void impulseResponseLPF(double Fs, double Fc, unsigned short int num_taps, std::
 void impulseResponseBPF(double Fs, double Fe, double Fb, unsigned short int num_taps, std::vector<double> &h, double decim)
 {
 
-	double center = (Fe+Fc)/2;
+	double center = ((Fe+Fb)/2)/(Fs/2);
 	double pass = (Fe-Fb)/(Fs/2);
 	// allocate memory for the impulse response
 	h.resize(num_taps, 0.0);
-	for(auto i = 0, i < num_taps, i++){
+	for(auto i = 0; i < num_taps; i++){
 		if(i == (num_taps-1)/2){
 			h[i] = pass;
 		}else{
