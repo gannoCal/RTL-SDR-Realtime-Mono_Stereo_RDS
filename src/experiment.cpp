@@ -181,8 +181,8 @@ int main(int argc,char* argv[])
 	std::vector<double> i_ds((block_size)/20, 0);
 	std::vector<double> q_ds((block_size)/20, 0);
 
-    std::vector<double> st_ds((block_size)/20, 0);
-    std::vector<double> tone_ds((block_size)/20, 0);
+    std::vector<double> st_ds((block_size)/40, 0);
+    std::vector<double> tone_ds((block_size)/40, 0);
 
 	std::vector<double> audio_ds((block_size)/100, 0);
 	std::vector<double> state_conv(audio_taps-1, 0);
@@ -253,13 +253,13 @@ int main(int argc,char* argv[])
 
 
         if (stereoMode){
-            convolveFIR_N_dec(1, st_ds, fm_demod, st_coeff,state_st_240k);
-            convolveFIR_N_dec(1, tone_ds, fm_demod, tone_coeff,state_tone_240k);
+            convolveFIR_N_dec(2, st_ds, fm_demod, st_coeff,state_st_240k);
+            convolveFIR_N_dec(2, tone_ds, fm_demod, tone_coeff,state_tone_240k);
             
-            fmPll(tone_ds,PLLfreq,if_Fs,PLLNCOscale,phaseAdjust,normBandwidth,ncoOut,prevstate);
+            fmPll(tone_ds,PLLfreq,if_Fs/2,PLLNCOscale,phaseAdjust,normBandwidth,ncoOut,prevstate);
             
             for(auto i = 0 ; i < st_ds.size();i++){
-                stereo_data[i] = ncoOut[i] * st_ds[i] * 2;
+                stereo_data[2*i] = ncoOut[i] * st_ds[i] * 2;
             }
 
             convolveFIR_N_dec(decimator, stereo_data_ds, stereo_data, audio_coeff,state_stereo_data);
