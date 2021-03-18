@@ -120,24 +120,24 @@ int main(int argc,char* argv[])
 	int rf_Fs = 2.4e6;
 	int decimator = 5;
 	const int rf_Fc = 100e3;
-	const int rf_taps = 151;
+	const int rf_taps = 51;
 	const int rf_decim = 10;
 
 	int audio_Fs = 240e3;
 	const int audio_decim = 5;
 	const int audio_Fc = 16e3;
-	const int audio_taps = 151;
+	const int audio_taps = 51;
 
     int if_Fs = 240e3;
 	const int sbanddecim = 1;
 	const int sband_Fb = 22e3;
     const int sband_Fe = 54e3;
-	const int sband_taps = 151;
+	const int sband_taps = 51;
     
 	const int tbanddecim = 1;
 	const int tband_Fb = 18.5e3;
     const int tband_Fe = 19.5e3;
-	const int tband_taps = 151;
+	const int tband_taps = 51;
 
 	if(mode == 1)
 	{
@@ -202,6 +202,7 @@ int main(int argc,char* argv[])
     prevstate[5] = 0.0;            //state_trigOffset = 0.0;
 
     double PLLfreq = 19e3;
+    double PLLfs = 240e3;
     double PLLNCOscale = 2.0;
     double phaseAdjust = 0.0;
     double normBandwidth = 0.01;
@@ -213,10 +214,17 @@ int main(int argc,char* argv[])
 	
     //std::vector<short int> stereo_out_data(block_size/50);
     std::vector<short int> audio_data(block_size/100);
+    std::vector<double> iq_data(block_size);
+    std::vector<double> i_samples_block, q_samples_block;
+    i_samples_block.resize(iq_data.size()/2,(double)0.0);
+    q_samples_block.resize(iq_data.size()/2,(double)0.0);
+    int sample_counter = 0;
+
+
 	std::cerr << "Enter Loop"  << " \n";
         for (unsigned int block_id = 0; ; block_id++){          //Loop Begin
 
-        std::vector<double> iq_data(block_size);
+        
         if(floatMode == false)
             readStdinBlockData(block_size,block_id,iq_data);
         else
@@ -227,11 +235,9 @@ int main(int argc,char* argv[])
             exit(1);
         }
 
-        std::vector<double> i_samples_block, q_samples_block;
-        i_samples_block.resize(iq_data.size()/2,(double)0.0);
-        q_samples_block.resize(iq_data.size()/2,(double)0.0);
+        
 
-        int sample_counter = 0;
+        sample_counter = 0;
         for (auto i = 0; i < iq_data.size() - 1; i = i + 2)
         {
             i_samples_block[sample_counter] = iq_data[i];
@@ -256,7 +262,7 @@ int main(int argc,char* argv[])
             convolveFIR_N_dec(1, st_ds, fm_demod, st_coeff,state_st_240k);
             convolveFIR_N_dec(1, tone_ds, fm_demod, tone_coeff,state_tone_240k);
             
-            fmPll(tone_ds,PLLfreq,if_Fs,PLLNCOscale,phaseAdjust,normBandwidth,ncoOut,prevstate);
+            fmPll(tone_ds,PLLfreq,PLLfs,PLLNCOscale,phaseAdjust,normBandwidth,ncoOut,prevstate);
             
             for(auto i = 0 ; i < st_ds.size();i++){
                 stereo_data[i] = ncoOut[i] * st_ds[i] * 2;
