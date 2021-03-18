@@ -207,11 +207,11 @@ int main(int argc,char* argv[])
     double normBandwidth = 0.01;
 
     std::vector<double> stereo_data_ds((block_size)/100, 0);
-    std::vector<double> stereo_block((block_size)/50, 0);
+    std::vector<short int> stereo_block((block_size)/50, 0);
     std::vector<double> state_stereo_data(audio_taps-1, 0);
 
 	
-    std::vector<short int> stereo_out_data(block_size/50);
+    //std::vector<short int> stereo_out_data(block_size/50);
     std::vector<short int> audio_data(block_size/100);
 	std::cerr << "Enter Loop"  << " \n";
         for (unsigned int block_id = 0; ; block_id++){          //Loop Begin
@@ -257,45 +257,46 @@ int main(int argc,char* argv[])
             convolveFIR_N_dec(1, tone_ds, fm_demod, tone_coeff,state_tone_240k);
             
             fmPll(tone_ds,PLLfreq,if_Fs,PLLNCOscale,phaseAdjust,normBandwidth,ncoOut,prevstate);
+            
             for(auto i = 0 ; i < st_ds.size();i++){
                 stereo_data[i] = ncoOut[i] * st_ds[i] * 2;
             }
 
             convolveFIR_N_dec(decimator, stereo_data_ds, stereo_data, audio_coeff,state_stereo_data);
+
             for(unsigned int i=0 ; i < audio_ds.size() ; i++){
-            stereo_block[2*i+1] = (audio_ds[i] - stereo_data_ds[i]  ) / 2   ;     //r
-            stereo_block[2*i] = (audio_ds[i]  + stereo_data_ds[i]  ) / 2    ;   //l
-            //stereo_block[2*i+1] = audio_ds[i];     //r
-            //stereo_block[i] = (audio_ds[i]  )   ;   //l
-            }
             
-            for(unsigned int k=0 ; k < stereo_block.size() ; k++){
-                if(std::isnan(stereo_block[k])) stereo_out_data[k] = 0;
-                else stereo_out_data[k] = (short int)(stereo_block[k] * 16384);
+            stereo_block[2*i+1] = std::isnan(audio_ds[i]) || std::isnan(stereo_data_ds[i]) ? (short int)0 :  (short int)(16384*(audio_ds[i] - stereo_data_ds[i]  ) / 2)   ;     //r
+            stereo_block[2*i] = std::isnan(audio_ds[i]) || std::isnan(stereo_data_ds[i]) ? (short int)0 : (short int)(16384*(audio_ds[i]  + stereo_data_ds[i]  ) / 2)    ;   //l
+            
             }
-            fwrite(&stereo_out_data[0], sizeof(short int),stereo_out_data.size(),stdout);
+            // for(unsigned int k=0 ; k < stereo_block.size() ; k++){
+            //     if(std::isnan(stereo_block[k])) stereo_out_data[k] = 0;
+            //     else stereo_out_data[k] = (short int)(stereo_block[k] * 16384);
+            // }
+            fwrite(&stereo_block[0], sizeof(short int),stereo_block.size(),stdout);
             //fwrite(&stereo_data[0], sizeof(short int),stereo_data.size(),stdout);
-            if(block_id == 1){
-                int NFFT_in = (int)NFFT;
-                std::vector<double> freq, psd_est;
-                double fsIN = (double)48e3;
-                estimatePSD(stereo_block, NFFT_in , fsIN, freq, psd_est);
+            // if(block_id == 1){
+            //     int NFFT_in = (int)NFFT;
+            //     std::vector<double> freq, psd_est;
+            //     double fsIN = (double)48e3;
+            //     estimatePSD(audio_ds, NFFT_in , fsIN, freq, psd_est);
 
 	
-	            std::vector<float> vector_index;
-	            genIndexVector(vector_index, psd_est.size());
-	            logVector("plot1", vector_index, psd_est);
+	        //     std::vector<float> vector_index;
+	        //     genIndexVector(vector_index, psd_est.size());
+	        //     logVector("plot1", vector_index, psd_est);
 
-                fsIN = (double)48e3;
-                estimatePSD(audio_ds, NFFT_in , fsIN, freq, psd_est);
-                genIndexVector(vector_index, psd_est.size());
-	            logVector("plot2", vector_index, psd_est);
+            //     fsIN = (double)48e3;
+            //     estimatePSD(audio_ds, NFFT_in , fsIN, freq, psd_est);
+            //     genIndexVector(vector_index, psd_est.size());
+	        //     logVector("plot2", vector_index, psd_est);
 
-                fsIN = (double)48e3;
-                estimatePSD(stereo_data_ds, NFFT_in , fsIN, freq, psd_est);
-                genIndexVector(vector_index, psd_est.size());
-	            logVector("plot3", vector_index, psd_est);
-            }
+            //     fsIN = (double)48e3;
+            //     estimatePSD(stereo_data_ds, NFFT_in , fsIN, freq, psd_est);
+            //     genIndexVector(vector_index, psd_est.size());
+	        //     logVector("plot3", vector_index, psd_est);
+            // }
         
         
         }else{
