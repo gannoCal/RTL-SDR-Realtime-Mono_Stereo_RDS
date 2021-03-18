@@ -19,6 +19,7 @@ void upsampleIQSamples(std::vector<double> &,std::vector<double> &);
 
 int main(int argc,char* argv[])
 {
+    bool floatMode = false;
 	int mode = 0;
     if(argc < 2){
         std::cerr << "Default - Mode 0";
@@ -30,7 +31,24 @@ int main(int argc,char* argv[])
             exit(1);
         }
         std::cerr << "Mode is : " << mode << " \n";
-	}else{
+	}else if(argc == 3){
+        mode = atoi(argv[1]);
+        char* floatModeIn = argv[2];
+        if(mode != 1 && mode != 0){
+            std::cerr << "Wrong Mode! Exiting...";
+            exit(1);
+        }
+
+        if(floatModeIn[0] == '-' && floatModeIn[1]== 'f'){
+            floatMode = true;
+        }else{
+            std::cerr << "Wrong floatMode command! Exiting...";
+            exit(1);
+        }
+        std::cerr << "Mode is : " << mode << " \n";
+        std::cerr << "floatmode is : " << floatModeIn[0] << floatModeIn[1] << " \n";
+
+    }else{
         std::cerr << "Error. Please fix your input. " << " \n";
     }
 
@@ -95,8 +113,11 @@ int main(int argc,char* argv[])
         for (unsigned int block_id = 0; ; block_id++){
 
         std::vector<double> iq_data(block_size);
+        if(floatMode == false)
+            readStdinBlockData(block_size,block_id,iq_data);
+        else
+            readStdinBlockDataFloat(block_size,block_id,iq_data);
 
-        readStdinBlockData(block_size,block_id,iq_data);
         if((std::cin.rdstate())!=0){
             std::cerr << "End of Input Stream";
             exit(1);

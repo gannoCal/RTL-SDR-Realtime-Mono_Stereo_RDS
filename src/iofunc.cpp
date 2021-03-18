@@ -83,6 +83,15 @@ void readStdinBlockData(unsigned int num_samples,unsigned int block_id,std::vect
     for(unsigned int k = 0 ; k < num_samples ; k++){
         block_data[k] = float(((unsigned char)raw_data[k] - 128)/(double)128.0);
     }
+}
+
+void readStdinBlockDataFloat(unsigned int num_samples,unsigned int block_id,std::vector<double> &block_data){
+    std::vector<float> raw_data(num_samples);
+    std::cin.read(reinterpret_cast<char*>(&raw_data[0]),num_samples*sizeof(float));
+    for( auto i = 0 ; i < num_samples ; i++){
+        block_data[i] = (double)raw_data[i];
+    }
+    
 
 
 }

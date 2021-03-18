@@ -29,4 +29,6 @@ void writeBinData(const std::string, const std::vector<double> &);
 
 void readStdinBlockData(unsigned int,unsigned int,std::vector<double> &);
 
+void readStdinBlockDataFloat(unsigned int,unsigned int,std::vector<double> &);
+
 #endif // DY4_IOFUNC_H
