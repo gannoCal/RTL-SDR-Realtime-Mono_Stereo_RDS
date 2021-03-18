@@ -6,8 +6,8 @@ McMaster University
 Ontario, Canada
 */
 
-#ifndef DY4_FILTER_H
-#define DY4_FILTER_H
+#ifndef DY4_FMPLL_H
+#define DY4_FMPLL_H
 
 // add headers as needed
 #include <iostream>
@@ -16,6 +16,6 @@ Ontario, Canada
 #include <cmath>
 
 // declaration of a function prototypes
-void fmPll(std::vector<float> &, const float &,const float &,const float &, const float &,const float &,std::vector<float> &, std::vector<float> &);
+void fmPll(std::vector<double> &, const double &,const double &,const double &, const double &,const double &,std::vector<double> &, std::vector<double> &);
 
-#endif // DY4_FILTER_H
+#endif // DY4_FMPLL_H

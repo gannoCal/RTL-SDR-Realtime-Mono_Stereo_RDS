@@ -30,6 +30,27 @@ void impulseResponseLPF(double Fs, double Fc, unsigned short int num_taps, std::
 }
 
 
+void impulseResponseBPF(double Fs, double Fb,double Fe, unsigned short int num_taps, std::vector<double> &h, double decim)
+{
+	
+	double center = ((Fe+Fb)/2.0)/((Fs/decim)/2.0);
+    double pass = (Fe-Fb)/((Fs/decim)/2.0);
+	// allocate memory for the impulse response
+	h.resize(num_taps, 0.0);
+	for(auto i = 0 ; i < num_taps ; i++){
+		if(i == (num_taps-1)/2){
+			h[i] = pass;
+		}else{
+			h[i] = pass * sin( PI * (pass/2) *( i-(num_taps-1)/2 ) ) / ( PI * (pass/2) *( i-(num_taps-1)/2 ) );
+		}
+        h[i] = h[i] * cos(i*PI*center);
+		h[i] = h[i] * (sin(i * PI / num_taps)*sin(i * PI / num_taps));
+		//printf("h[%d] = %f\n",i,h[i]);
+	}
+	
+}
+
+
 // function to compute the filtered output "y" by doing the convolution
 // of the input data "x" with the impulse response "h"
 /*void convolveFIR(std::vector<float> &y, const std::vector<float> &x, const std::vector<float> &h)
