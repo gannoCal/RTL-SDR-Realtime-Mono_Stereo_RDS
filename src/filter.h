@@ -1,6 +1,5 @@
 /*
 Comp Eng 3DY4 (Computer Systems Integration Project)
-
 Department of Electrical and Computer Engineering
 McMaster University
 Ontario, Canada
@@ -14,8 +13,10 @@ Ontario, Canada
 #include <vector>
 
 // declaration of a function prototypes
-void impulseResponseLPF(float, float, unsigned short int, std::vector<float> &);
+void impulseResponseLPF(double, double, unsigned short int, std::vector<double> &,double);
+void impulseResponseBPF(double, double,double, unsigned short int, std::vector<double> &,double);
 //void convolveFIR(std::vector<float> &, const std::vector<float> &, const std::vector<float> &);
-void convolveFIR_N_dec(const int, std::vector<float> &, const std::vector<float> &, const std::vector<float> &, std::vector<float> &);
-void fmDemodArctanBlock(std::vector<float> &fm_demod,std::vector<float> &I, std::vector<float> &Q,std::vector<float> &prev_phase);
+void convolveFIR_N_dec(const int, std::vector<double> &, const std::vector<double> &, const std::vector<double> &, std::vector<double> &);
+void convolve_UPSAMPLE_N_dec(const int step_size, const int upsample_size, std::vector<double> &y, const std::vector<double> &x, const std::vector<double> &h, std::vector<double> &state);
+void fmDemodArctanBlock(std::vector<double> &fm_demod,std::vector<double> &I, std::vector<double> &Q,std::vector<double> &prev_phase);
 #endif // DY4_FILTER_H

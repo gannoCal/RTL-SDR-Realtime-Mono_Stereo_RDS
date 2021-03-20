@@ -66,7 +66,7 @@ void readRawData(const std::string in_fname, std::vector<uint8_t> &bin_data)
 }
 
 // assumes data in the raw binary file is 32-bit float format
-void writeBinData(const std::string out_fname, const std::vector<float> &bin_data)
+void writeBinData(const std::string out_fname, const std::vector<double> &bin_data)
 {
 	std::cout << "Writing raw binary to \"" << out_fname << "\"\n";
 	std::ofstream fdout(out_fname, std::ios::binary);
