@@ -118,7 +118,6 @@ void convolve_UPSAMPLE_N_dec(const int step_size, const int upsample_size, std::
 		max_size = h.size();
 	}
 	long special = 0;
-
 	for(auto phase = 0; phase < upsample_size; phase++){
 
 			for (auto n = phase; n < y.size(); n = n + upsample_size)
@@ -129,25 +128,25 @@ void convolve_UPSAMPLE_N_dec(const int step_size, const int upsample_size, std::
 				y[n] = 0;
 				for (auto m = 0; m < h.size(); m = m + 1)
 				{
-					if ((step_size*n-m) >= 0 && (step_size*n-m) < max_size)
+					if (((step_size%upsample_size)*n-m) >= 0 && ((step_size%upsample_size)*n-m) < max_size)
 						{
-							y[n] += x[step_size*n-m] * h[m];
-						}else if((step_size*n-m) < 0 && state.size() > 0){
+							y[n] += x[(step_size%upsample_size)*n-m] * h[m];
+						}else if(((step_size%upsample_size)*n-m) < 0 && state.size() > 0){
 							y[n] += state[state.size() - 1 - special] * h[m];
 							special++;
 						}
 
-					x_count = x_count - upsample_size;
+					}
 
-				}
 				// sleep(1);
 				// std::cout << " n: " << n <<" y[n] : " <<  y[n] << " \n";
 			}
 
-
-
 	}
 
+	// for(auto ii = 0 ; ii < y.size(); ii++){
+	// 	y[ii] =y[ii]*upsample_size;
+	// }
 
 //	for(auto i = 0 ; i < y.size(); i++){y[i] = y[i]*upsample_size;}
 
@@ -155,8 +154,8 @@ void convolve_UPSAMPLE_N_dec(const int step_size, const int upsample_size, std::
 	for(auto ii = 0 ; ii < state.size(); ii++){
 		state[ii] = x[(x.size()) - state.size() + ii];
 	}
-}
 
+}
 
 void fmDemodArctanBlock(std::vector<double> &fm_demod,std::vector<double> &I, std::vector<double> &Q,std::vector<double> &prev_phase){
 	fm_demod.resize(I.size(), 0.0);

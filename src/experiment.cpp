@@ -28,19 +28,20 @@ mode = 1;
 	int rf_Fs = 2.4e6;
 	int decimator = 5;
 	const int rf_Fc = 100e3;
-	const int rf_taps = 151;
+	int rf_taps = 151;
 	const int rf_decim = 10;
 
 	int audio_Fs = 240e3;
 	const int audio_decim = 5;
 	const int audio_Fc = 16e3;
-	const int audio_taps = 151;
+	int audio_taps = 151;
 
 	if(mode == 1)
 	{
 		rf_Fs = 2.5e6;
 		decimator = 125;
         audio_Fs = 250e3;
+				audio_taps = audio_taps*24;
 	}
 	else
 	// Mode 0 assumed to be default if Mode 1 not selected
@@ -49,7 +50,7 @@ mode = 1;
 		decimator = audio_decim;
 	}
 
-	const std::string in_fname = "../data/my_samples_2.4_march16.raw";
+	const std::string in_fname = "../data/samples_25.raw";
 	std::vector<uint8_t> bin_data;
 
 	readRawData(in_fname, bin_data);
@@ -177,7 +178,7 @@ mode = 1;
 		fmDemodArctanBlock(fm_demod,i_ds, q_ds, state_phase);
 		std::cout << "output size tan: " <<  i_ds.size() << " \n";
 		std::cout << "size: " << fm_demod.size() << " \n";
-if(mode == 1){std::cout << "MODE 1 \n";convolve_UPSAMPLE_N_dec(5,24, audio_ds,fm_demod,audio_coeff,state_conv);}
+if(mode == 1){std::cout << "MODE 1 \n";convolve_UPSAMPLE_N_dec(125,24, audio_ds,fm_demod,audio_coeff,state_conv);}
 else{convolveFIR_N_dec(decimator, audio_ds,fm_demod,audio_coeff,state_conv);}
 		// for(auto jjj = 0 ; jjj < fm_demod.size() ; jjj ++){
 		// 	//std::cout << "demod block post-convolution rand# : " <<  fm_demod[jjj] << " \n";
