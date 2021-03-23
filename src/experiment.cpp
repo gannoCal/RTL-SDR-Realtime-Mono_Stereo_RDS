@@ -221,24 +221,24 @@ int main(int argc,char* argv[])
 	int rf_Fs = 2.4e6;
 	int decimator = 5;
 	const int rf_Fc = 100e3;
-	const int rf_taps = 151;
+	const int rf_taps = Taps;
 	const int rf_decim = 10;
 
 	int audio_Fs = 240e3;
 	const int audio_decim = 5;
 	const int audio_Fc = 16e3;
-	const int audio_taps = 151;
+	const int audio_taps = Taps;
 
     int if_Fs = 240e3;
 	const int sbanddecim = 1;
 	const int sband_Fb = 22e3;
     const int sband_Fe = 54e3;
-	const int sband_taps = 151;
+	const int sband_taps = Taps;
     
 	const int tbanddecim = 1;
 	const int tband_Fb = 18.5e3;
     const int tband_Fe = 19.5e3;
-	const int tband_taps = 151;
+	const int tband_taps = Taps;
 
 	if(mode == 1)
 	{

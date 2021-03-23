@@ -13,6 +13,7 @@ Ontario, Canada
 // our beloved PI constant
 #define PI 3.14159265358979323846
 #define QUEUE_bLoCks 200
+#define Taps 151
 #include <queue>
 #include <deque>
 #include <iostream>
