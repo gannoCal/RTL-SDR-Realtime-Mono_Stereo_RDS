@@ -110,46 +110,6 @@ void convolveFIR_N_dec(const int step_size, std::vector<double> &y, const std::v
 	
 }
 
-void convolve_UPSAMPLE_N_dec(const int step_size, const int upsample_size, std::vector<double> &y, const std::vector<double> &x, const std::vector<double> &h, std::vector<double> &state)
-{
-	auto max_size = x.size();
-	if (h.size() > max_size)
-	{
-		max_size = h.size();
-	}
-	long special = 0;
-	for(auto phase = 0; phase < upsample_size; phase++){
-
-			for (auto n = phase; n < y.size(); n = n + upsample_size)
-			{
-				int x_count = n;
-				// std::cout << "phase : " <<  phase << " \n";
-				special = 0;
-				y[n] = 0;
-				for (auto m = 0; m < h.size(); m = m + 1)
-				{
-					if (((step_size%upsample_size)*n-m) >= 0 && ((step_size%upsample_size)*n-m) < max_size)
-						{
-							y[n] += x[(step_size%upsample_size)*n-m] * h[m];
-						}else if(((step_size%upsample_size)*n-m) < 0 && state.size() > 0){
-							y[n] += state[state.size() - 1 - special] * h[m];
-							special++;
-						}
-
-					}
-
-			}
-
-	}
-
-
-
-	for(auto ii = 0 ; ii < state.size(); ii++){
-		state[ii] = x[(x.size()) - state.size() + ii];
-	}
-
-}
-
 
 void fmDemodArctanBlock(std::vector<double> &fm_demod,std::vector<double> &I, std::vector<double> &Q,std::vector<double> &prev_phase){
 	fm_demod.resize(I.size(), 0.0);
