@@ -77,7 +77,7 @@ void writeBinData(const std::string out_fname, const std::vector<double> &bin_da
 	fdout.close();
 }
 
-void readStdinBlockData(unsigned int num_samples,unsigned int block_id,std::vector<double> &block_data){
+void readStdinBlockData(unsigned int num_samples,std::vector<double> &block_data){
     std::vector<char> raw_data(num_samples);
     std::cin.read(reinterpret_cast<char*>(&raw_data[0]),num_samples*sizeof(char));
     for(unsigned int k = 0 ; k < num_samples ; k++){
@@ -85,7 +85,7 @@ void readStdinBlockData(unsigned int num_samples,unsigned int block_id,std::vect
     }
 }
 
-void readStdinBlockDataFloat(unsigned int num_samples,unsigned int block_id,std::vector<double> &block_data){
+void readStdinBlockDataFloat(unsigned int num_samples,std::vector<double> &block_data){
     std::vector<float> raw_data(num_samples);
     std::cin.read(reinterpret_cast<char*>(&raw_data[0]),num_samples*sizeof(float));
     for( auto i = 0 ; i < num_samples ; i++){
