@@ -197,7 +197,6 @@ int main(int argc,char* argv[])
 		decimator = 125;
         audio_Fs = 250e3;
         if_Fs = 250e3;
-	audio_taps = audio_taps*24;
 	}
 	else
 	// Mode 0 assumed to be default if Mode 1 not selected
@@ -551,8 +550,7 @@ void AuDiOtHrEaDmEtHoD(
 
 
     //////////////////Compute/////////////////////////
-    if(mode == 1){std::cout << "MODE 1 \n";convolve_UPSAMPLE_N_dec(decimator,24, audio_ds,fm_demod,audio_coeff,state_conv);}
-    else{convolveFIR_N_dec(decimator, audio_ds,fm_demod,audio_coeff,state_conv);}
+        convolveFIR_N_dec(decimator, audio_ds,fm_demod,audio_coeff,state_conv);
 
 
             if (stereoMode){
