@@ -19,5 +19,5 @@ void impulseResponseBPF(double, double,double, unsigned short int, std::vector<d
 //void convolveFIR(std::vector<float> &, const std::vector<float> &, const std::vector<float> &);
 void convolveFIR_N_dec(const int, std::vector<double> &, const std::vector<double> &, const std::vector<double> &, std::vector<double> &);
 void fmDemodArctanBlock(std::vector<double> &,std::vector<double> &, std::vector<double> &,std::vector<double> &);
-void convolve_UPSAMPLE_N_dec(const int, const int, std::vector<double> &, const std::vector<double> &, const std::vector<double> &, std::vector<double> &);
+void convolve_UPSAMPLE_N_dec(int,int, std::vector<double> &, const std::vector<double> &, const std::vector<double> &, std::vector<double> &);
 #endif // DY4_FILTER_H
