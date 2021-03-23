@@ -258,7 +258,8 @@ int main(int argc,char* argv[])
 	std::vector<double> audio_coeff;
     std::vector<double> st_coeff;
     std::vector<double> tone_coeff;
-	std::vector<double> fm_demod;
+	std::vector<double> fm_demod_fe;
+    std::vector<double> fm_demod_audio;
 
 
 	impulseResponseLPF(rf_Fs, rf_Fc, rf_taps, rf_coeff,1);
@@ -343,7 +344,7 @@ if(floatMode){
         std::ref(state_i_lpf_100k),
         std::ref(state_q_lpf_100k),
         std::ref(state_phase),
-        std::ref(fm_demod),
+        std::ref(fm_demod_fe),
         std::ref(my_queue),
         std::ref(my_mutex),
         std::ref(my_cvar)
@@ -354,7 +355,7 @@ if(floatMode){
         stereoAuDiOtHrEaDmEtHoD,
         std::ref(decimator),
         std::ref(audio_ds),
-        std::ref(fm_demod),
+        std::ref(fm_demod_audio),
         std::ref(audio_coeff),
         std::ref(state_conv),
         std::ref(st_ds),
@@ -398,7 +399,7 @@ if(floatMode){
         std::ref(state_i_lpf_100k),
         std::ref(state_q_lpf_100k),
         std::ref(state_phase),
-        std::ref(fm_demod),
+        std::ref(fm_demod_fe),
         std::ref(my_queue),
         std::ref(my_mutex),
         std::ref(my_cvar)
@@ -409,7 +410,7 @@ if(floatMode){
         monoAuDiOtHrEaDmEtHoD,
         std::ref(decimator),
         std::ref(audio_ds),
-        std::ref(fm_demod),
+        std::ref(fm_demod_audio),
         std::ref(audio_coeff),
         std::ref(state_conv),
         std::ref(st_ds),
@@ -457,7 +458,7 @@ if(floatMode){
         std::ref(state_i_lpf_100k),
         std::ref(state_q_lpf_100k),
         std::ref(state_phase),
-        std::ref(fm_demod),
+        std::ref(fm_demod_fe),
         std::ref(my_queue),
         std::ref(my_mutex),
         std::ref(my_cvar)
@@ -468,7 +469,7 @@ if(floatMode){
         stereoAuDiOtHrEaDmEtHoD,
         std::ref(decimator),
         std::ref(audio_ds),
-        std::ref(fm_demod),
+        std::ref(fm_demod_audio),
         std::ref(audio_coeff),
         std::ref(state_conv),
         std::ref(st_ds),
@@ -512,7 +513,7 @@ if(floatMode){
         std::ref(state_i_lpf_100k),
         std::ref(state_q_lpf_100k),
         std::ref(state_phase),
-        std::ref(fm_demod),
+        std::ref(fm_demod_fe),
         std::ref(my_queue),
         std::ref(my_mutex),
         std::ref(my_cvar)
@@ -523,7 +524,7 @@ if(floatMode){
         monoAuDiOtHrEaDmEtHoD,
         std::ref(decimator),
         std::ref(audio_ds),
-        std::ref(fm_demod),
+        std::ref(fm_demod_audio),
         std::ref(audio_coeff),
         std::ref(state_conv),
         std::ref(st_ds),
