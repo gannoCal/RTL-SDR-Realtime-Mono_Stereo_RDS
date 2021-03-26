@@ -14,7 +14,6 @@ Ontario, Canada
 #include "logfunc.h"
 
 
-
 int main(int argc,char** argv)
 {
 
@@ -31,16 +30,24 @@ int main(int argc,char** argv)
 
 
 // low pass + resampler - begin
-	impulseResponseLPF(double Fs, double Fc, unsigned short int num_taps, std::vector<double> &h, double decim);
-	resampler(decimator, stereo_data_ds, stereo_data, audio_coeff,state_stereo_data);
+int Fc = 3000;
+int k = 24;
+
+
+	impulseResponseLPF( Fs, Fc, num_taps,RDS_coeff, 1);
+if(mode == 0){resampler(80,19, rds_data_ds, rds_data, rds_coeff,state_stereo_data);}
+if(mode == 1){resampler(80,19, rds_data_ds, rds_data, rds_coeff,state_stereo_data);}
+
 	// low pass + resampler - end
 
 // RRC begin
 impulseResponseRootRaisedCosine(Fs, N_taps,impulseResponseRRC)
+convolveFIR_N_dec(1, rds_data_RRC, rds_data_ds, impulseResponseRRC, std::vector<double> &state )
+
 // RRC end
 
 // CDR begin
-impulseResponseRootRaisedCosine(Fs, N_taps,impulseResponseRRC)
+
 // CDR end
 
 	return 0;

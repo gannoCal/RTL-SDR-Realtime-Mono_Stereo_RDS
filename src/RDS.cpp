@@ -47,6 +47,18 @@ void resampler(const int step_size, const int upsample_size, std::vector<double>
 	}
 }
 
+void CDR()
+{
+	// since we want to get the middle sample lets offset
+// 1 represnts a high , 0 represents a below
+// MAnchester coding HL -> 1. LH -> 0
+	int v = k/2
+	for(auto i = 0; i < rds_data_RRC.size();i = i + v){
+		if(rds_data_RRC[i] == max_range && rds_data_RRC[i] == max_range){result[counter] = 1;}
+		else{result[counter] = 0;}
+	}
+}
+
 void impulseResponseRootRaisedCosine(Fs, N_taps,impulseResponseRRC)
 {
 	double T_s = 1/2375;
