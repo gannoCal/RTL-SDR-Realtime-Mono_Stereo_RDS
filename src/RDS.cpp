@@ -47,15 +47,21 @@ void resampler(const int step_size, const int upsample_size, std::vector<double>
 	}
 }
 
-void Manchester()
+void Manchester_and_differntial(rds_data_RRC,logicdata)
 {
 	// since we want to get the middle sample lets offset
 // 1 represnts a high , 0 represents a below
 // MAnchester coding HL -> 1. LH -> 0
 	int v = k/2
-	for(auto i = 0; i < rds_data_RRC.size();i = i + v){
-		if(rds_data_RRC[i] == max_range && rds_data_RRC[i] == max_range){result[counter] = 1;}
-		else{result[counter] = 0;}
+	for(auto i = 0; i < rds_data_RRC.size();i = i + 2*v){
+		if(rds_data_RRC[i] > 0 && rds_data_RRC[i+v] < 0){prediff[counter] = 1;}
+		else{prediff[counter] = 0;}
+	}
+
+	logicdata.resize(prediff.size());
+	logicdata[0] = prediff[0];
+	for(auto i = 1; i < logicdata.size();i = i + 1){
+		logicdata[i] = prediff[i]^prediff[i-1];
 	}
 }
 
