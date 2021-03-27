@@ -47,7 +47,7 @@ void resampler(const int step_size, const int upsample_size, std::vector<double>
 	}
 }
 
-void CDR()
+void Manchester()
 {
 	// since we want to get the middle sample lets offset
 // 1 represnts a high , 0 represents a below
