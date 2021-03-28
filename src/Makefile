@@ -4,7 +4,7 @@ CC = g++
 # CFLAGS = -c -Wall -Wpedantic
 CFLAGS = -c -g -O3
 LDFLAGS =
-SOURCES = experiment.cpp iofunc.cpp filter.cpp  fourier.cpp  genfunc.cpp  logfunc.cpp
+SOURCES = fmPll.cpp RDS.cpp RDS_DEMOD.cpp experiment.cpp iofunc.cpp filter.cpp  fourier.cpp  genfunc.cpp  logfunc.cpp
 OBJECTS = $(SOURCES:.cpp=.o)
 EXECUTABLE = experiment
 

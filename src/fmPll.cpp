@@ -8,6 +8,8 @@ Ontario, Canada
 
 #include "dy4.h"
 #include "logfunc.h"
+#include <cmath>
+
 #define PI 3.14159265358979323846
 
 /*
@@ -49,16 +51,16 @@ void fmPll(std::vector<float> &pllIn, const float &freq,const float &Fs,const fl
 
 		phaseEst = phaseEst + Kp*errorD + integrator;
 
-		trigArg = 2*PI*(freq/Fs)*(k+1) + phaseEst;
-		feedbackI = cos(trigArg)
-		feedbackQ = sin(trigArg)
-		ncoOut[k+1] = cos(trigArg*ncoScale + phaseAdjust)
+		double trigArg = 2*PI*(freq/Fs)*(k+1) + phaseEst;
+		feedbackI = cos(trigArg);
+		feedbackQ = sin(trigArg);
+		ncoOut[k+1] = cos(trigArg*ncoScale + phaseAdjust);
 	}
 
 	prevstate[0] = integrator;
 	prevstate[1] = phaseEst;
 	prevstate[2] = feedbackI;
 	prevstate[3] = feedbackQ;
-	prevstate[4] = ncoOut[ncoOut - 1];
+	prevstate[4] = ncoOut[ncoOut.size() - 1];
 
 }

@@ -12,41 +12,56 @@ Ontario, Canada
 #include "genfunc.h"
 #include "iofunc.h"
 #include "logfunc.h"
+#include "RDS.h"
 
 
 int main(int argc,char** argv)
 {
-
+	const int rf_decim = 10;
+	int Fc = 3000;
+	int upsample = 80;
+	int downsample = 19;
+	double PLLfreq = 3e3;
+	double Fs = 0;
+	int k = 0;
+	int num_taps = 51;
+	if(argc == 1){Fs = 250e3; k = 25;num_taps = num_taps*upsample;}
+	else{Fs = 240e3; k = 24;}
+	double PLLNCOscale = 2.0;
+	double phaseAdjust = 0.0;
+	double normBandwidth = 0.01;
+	const int block_size = 1024 * rf_decim * downsample * 2;
+	int block_count = 0;
 	std::vector<int> rds_ds;
 	std::vector<int> rds_data;
+	std::vector<double> ncoOut((block_size)/20, 0);
+	std::vector<double> prevstate(6,0);
+
+	std::vector<double> rds_carrier((block_size)/20, 0); // get from before
+	std::vector<double> logicdata_ds((block_size)/20, 0);
+	std::vector<double> RDS_coeff;
+
 
 
 /////// MIXER SHIT - ENDp
-std::vector<double> rds_carrier((block_size)/20, 0); // get from before
-double PLL_freq = 3e3;
-double Fs = 0;
-if(mode == 1){Fs = 250e3;int k = 25;}
-else{Fs = 240e3;int k = 24;}
-double PLLNCOscale = 2.0;
-double phaseAdjust = 0.0;
-double normBandwidth = 0.01;
-std::vector<double> ncoOut((block_size)/20, 0);
-std::vector<double> prevstate(6,0);
+while ((block_count+1)*block_size < rds_carrier.size() /*&& iii == 0*/)
+{
+	std::vector<double> rds_carrier_ds(rds_carrier.begin() + (block_count*block_size)/2, rds_carrier.begin() + ((block_count+1)*block_size)/2);
 
-	fmPll(rds_carrier,PLLfreq,PLLfs,PLLNCOscale,phaseAdjust,normBandwidth,ncoOut,prevstate);
-	for(auto i = 0; i < rds_ds.size(),i++){
+
+	fmPll(rds_carrier_ds,PLLfreq,Fs,PLLNCOscale,phaseAdjust,normBandwidth,ncoOut,prevstate);
+	for(auto i = 0; i < rds_ds.size();i++){
 		rds_ds[i] = ncoOut[i] * rds_carrier[i] * 2;
 	}
 	/////// MIXER SHIT - END
 
 
 // low pass + resampler - begin
-int Fc = 3000;
 
 
 
 	impulseResponseLPF( Fs, Fc, num_taps,RDS_coeff, 1);
-	resampler(80,19, rds_data_ds, rds_ds, rds_coeff,state_rds_data);
+	resampler(upsample,downsample, rds_data_ds, rds_ds, rds_coeff,state_rds_data);
 
 	// low pass + resampler - end
 
@@ -65,7 +80,10 @@ CDR(rds_data_RRC,k, sample_point)
 // CDR end
 
 // DATA Processing begin
-Manchester_and_differntial(rds_data_RRC,sample_point,logicdata);
+Manchester_and_differntial(rds_data_RRC,sample_point,logicdata_ds);
 // DATA Processing end
+logicdata.insert(logicdata.end(), logicdata_ds.begin(), logicdata_ds.end());
+block_count++;
+}
 	return 0;
 }
