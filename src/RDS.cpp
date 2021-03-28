@@ -47,13 +47,34 @@ void resampler(const int step_size, const int upsample_size, std::vector<double>
 	}
 }
 
-void Manchester_and_differntial(rds_data_RRC,logicdata)
+
+void CDR(rds_data_RRC, int k,int sample_point){
+	std::vector<double> sample_point_array(10, 0);
+
+	for(auto i = 0; i < 10; i++){
+		for(auto j = 1; j < k; j++){
+			if(abs(rds_data_RRC[i*k+j]) < abs(rds_data_RRC[i*k+j -1]) ){
+				sample_point_array[i] = j;
+			}
+
+		}
+	}
+
+	// take the avarage of the array to find the avarage max value
+	int total = 0;
+	for(auto i = 0; i < sample_point_array.size();i++){
+		total = total + sample_point_array[i];
+	}
+	k = int(total/sample_point_array.size());
+}
+
+void Manchester_and_differntial(rds_data_RRC, sample_point,logicdata)
 {
 	// since we want to get the middle sample lets offset
 // 1 represnts a high , 0 represents a below
 // MAnchester coding HL -> 1. LH -> 0
 	int v = k/2
-	for(auto i = 0; i < rds_data_RRC.size();i = i + 2*v){
+	for(auto i = v; i < rds_data_RRC.size();i = i + 2*v){
 		if(rds_data_RRC[i] > 0 && rds_data_RRC[i+v] < 0){prediff[counter] = 1;}
 		else{prediff[counter] = 0;}
 	}
