@@ -13,6 +13,7 @@ Ontario, Canada
 #include "iofunc.h"
 #include "logfunc.h"
 #include "RDS.h"
+#include "fmPll.h"
 
 
 int main(int argc,char** argv)
@@ -32,16 +33,22 @@ int main(int argc,char** argv)
 	double normBandwidth = 0.01;
 	const int block_size = 1024 * rf_decim * downsample * 2;
 	int block_count = 0;
+	int sample_point = 0;
 	std::vector<int> rds_ds;
 	std::vector<int> rds_data;
-	std::vector<double> ncoOut((block_size)/20, 0);
+	std::vector<double> ncoOut((int)(block_size)/20, 0);
 	std::vector<double> prevstate(6,0);
 
-	std::vector<double> rds_carrier((block_size)/20, 0); // get from before
-	std::vector<double> logicdata_ds((block_size)/20, 0);
-	std::vector<double> RDS_coeff;
-
-
+	std::vector<double> rds_carrier((int)(block_size)/20, 0); // get from before
+	std::vector<double> logicdata((int)(block_size)/20, 0);
+	std::vector<double> logicdata_ds((int)(block_size)/20, 0);
+	std::vector<double>rds_data_ds((int)(block_size)/20, 0);
+	std::vector<double> rds_data_RRC((int)(block_size)/20, 0);
+	std::vector<double> RDS_coeff((int)(block_size)/20, 0);
+	std::vector<double> rds_coeff((int)(block_size)/20, 0);
+	std::vector<double> &state((int)(block_size)/20, 0);
+	std::vector<double> &state_rds_data((int)(block_size)/20, 0);
+	std::vector<double> &simpulseResponseRRC((int)(block_size)/20, 0);
 
 /////// MIXER SHIT - ENDp
 while ((block_count+1)*block_size < rds_carrier.size() /*&& iii == 0*/)
@@ -66,8 +73,8 @@ while ((block_count+1)*block_size < rds_carrier.size() /*&& iii == 0*/)
 	// low pass + resampler - end
 
 // RRC begin
-impulseResponseRootRaisedCosine(Fs, N_taps,impulseResponseRRC);
-convolveFIR_N_dec(1, rds_data_RRC, rds_data_ds, impulseResponseRRC, std::vector<double> &state );
+impulseResponseRootRaisedCosine(Fs, num_taps,impulseResponseRRC);
+convolveFIR_N_dec(1, rds_data_RRC, rds_data_ds, impulseResponseRRC, state );
 
 // RRC end
 
