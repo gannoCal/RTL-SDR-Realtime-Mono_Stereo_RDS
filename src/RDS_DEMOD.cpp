@@ -34,8 +34,8 @@ int main(int argc,char** argv)
 	const int block_size = 1024 * rf_decim * downsample * 2;
 	int block_count = 0;
 	int sample_point = 0;
-	std::vector<int> rds_ds;
-	std::vector<int> rds_data;
+	std::vector<double> rds_ds;
+	std::vector<double> rds_data;
 	std::vector<double> ncoOut((int)(block_size)/20, 0);
 	std::vector<double> prevstate(6,0);
 
@@ -46,9 +46,9 @@ int main(int argc,char** argv)
 	std::vector<double> rds_data_RRC((int)(block_size)/20, 0);
 	std::vector<double> RDS_coeff((int)(block_size)/20, 0);
 	std::vector<double> rds_coeff((int)(block_size)/20, 0);
-	std::vector<double> &state((int)(block_size)/20, 0);
-	std::vector<double> &state_rds_data((int)(block_size)/20, 0);
-	std::vector<double> &simpulseResponseRRC((int)(block_size)/20, 0);
+	std::vector<double> state((int)(block_size)/20, 0);
+	std::vector<double> state_rds_data((int)(block_size)/20, 0);
+	std::vector<double> impulseResponseRRC((int)(block_size)/20, 0);
 
 /////// MIXER SHIT - ENDp
 while ((block_count+1)*block_size < rds_carrier.size() /*&& iii == 0*/)
@@ -81,7 +81,7 @@ convolveFIR_N_dec(1, rds_data_RRC, rds_data_ds, impulseResponseRRC, state );
 // CDR begin
 
 // to find the best point to sample, take the first 10 symbols and find the largest points, then avarage them
-CDR(rds_data_RRC,k, sample_point)
+CDR(rds_data_RRC,k, sample_point);
 
 
 // CDR end

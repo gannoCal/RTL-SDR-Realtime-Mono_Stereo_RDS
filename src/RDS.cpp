@@ -34,7 +34,7 @@ void resampler(const int step_size, const int upsample_size, std::vector<double>
 				if (((step_size%upsample_size)*n-m) >= 0 && ((step_size%upsample_size)*n-m) < max_size)
 				{
 					y[n] += x[(step_size%upsample_size)*n-m] * h[m];
-				} 
+				}
 				else if(((step_size%upsample_size)*n-m) < 0 && state.size() > 0)
 				{
 					y[n] += state[state.size() - 1 - special] * h[m];
@@ -74,7 +74,7 @@ void CDR(std::vector<double> rds_data_RRC, int k, int sample_point)
 	k = int(total/sample_point_array.size());
 }
 
-void Manchester_and_differntial(std::vector<double> rds_data_RRC, int sample_point, std::vector<double> logicdata, int k)
+void Manchester_and_differntial(std::vector<double> rds_data_RRC, int sample_point, std::vector<double> logicdata)
 {
 	// since we want to get the middle sample lets offset
 	// 1 represnts a high , 0 represents a below
@@ -93,7 +93,7 @@ void Manchester_and_differntial(std::vector<double> rds_data_RRC, int sample_poi
 	logicdata[0] = prediff[0];
 	for(auto i = 1; i < logicdata.size(); i++)
 	{
-		logicdata[i] = (!prediff[i] != !prediff[i-1]) ? 1 : 0; 
+		logicdata[i] = (!prediff[i] != !prediff[i-1]) ? 1 : 0;
 	}
 }
 
