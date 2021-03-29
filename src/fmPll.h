@@ -17,5 +17,6 @@ Ontario, Canada
 
 // declaration of a function prototypes
 void fmPll(std::vector<double> &, const double &,const double &,const double &, const double &,const double &,std::vector<double> &, std::vector<double> &);
+void fmPll_RDS(std::vector<double> &, const double &,const double &,const double &, const double &,const double &,std::vector<double> &, std::vector<double> &);
 
 #endif // DY4_FMPLL_H

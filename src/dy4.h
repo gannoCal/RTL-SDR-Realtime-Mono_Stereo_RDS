@@ -20,6 +20,8 @@ Ontario, Canada
 #include <thread>
 #include <mutex>
 #include <condition_variable>
+#include <time.h>
+#include <string>
 
 // although we use DFT (no FFT ... yet), the number of points for a
 // Fourier transform is defined as NFFT (same as matplotlib)

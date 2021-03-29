@@ -2,7 +2,7 @@
 
 CC = g++
 # CFLAGS = -c -Wall -Wpedantic
-CFLAGS = -c -O3
+CFLAGS = -c -g -O3
 LDFLAGS = -pthread 
 SOURCES = experiment.cpp iofunc.cpp filter.cpp  fmPll.cpp  fourier.cpp  genfunc.cpp  logfunc.cpp
 OBJECTS = $(SOURCES:.cpp=.o)
