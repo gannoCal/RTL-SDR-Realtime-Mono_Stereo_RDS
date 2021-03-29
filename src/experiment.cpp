@@ -1189,7 +1189,7 @@ void RDS_0(
     // double Q_adj = -PI/2 + PI/6 - PI/2 - PI/18 - 27*PI/180;
 
     double I_adj = PI/6 - PI/2 - PI/18;
-    double Q_adj = -PI/2 + PI/6 - PI/2 - PI/18;
+    double Q_adj = -PI/2 + PI/6 - PI/2;
     
 
     std::vector<double> prevstate(6,0);
@@ -1204,7 +1204,7 @@ void RDS_0(
     double PLLfs = 240e3;
     double PLLNCOscale = 0.5;
     double phaseAdjust = Q_adj;
-    double normBandwidth = 0.01;
+    double normBandwidth = 0.05;
 
     std::vector<double> prevstate1(6,0);
     prevstate1[0] = 0.0;            //state_integrator = 0.0;
@@ -1218,7 +1218,7 @@ void RDS_0(
     double PLLfs1 = 240e3;
     double PLLNCOscale1 = 0.5;
     double phaseAdjust1 = I_adj;
-    double normBandwidth1 = 0.01;
+    double normBandwidth1 = 0.05;
 
     std::vector<double> ncoOut_I((block_size)/20, 0);
     std::vector<double> ncoOut_Q((block_size)/20, 0);
@@ -1231,6 +1231,9 @@ void RDS_0(
 
     std::vector<double> RDS_Q_filt;
     std::vector<double> state_RDS_Q(rds_exreco_taps-1,0.0);
+
+    std::vector<double> RDS_I_filt_ds;
+    std::vector<double> RDS_Q_filt_ds;
 
     std::vector<double> rds_3k_coeff;
 
@@ -1260,7 +1263,7 @@ void RDS_0(
     int shift_state = 0;
     int saved_i = 0;
 
-    int e_count_limit = 20;
+    int e_count_limit = 10;
     int HH_LL_detected;
     int error_counter;
 
@@ -1349,30 +1352,46 @@ while(true){
         }
         convolveFIR_N_dec(1,reco_filt,sq_extr_filt,reco_coeff,state_reco);
 
+        //ncoOut_I.resize(reco_filt.size()+1,0.0);
+        //ncoOut_Q.resize(reco_filt.size()+1,0.0);
+
+        
+
         fmPll_RDS(reco_filt,PLLfreq1,PLLfs1,
         PLLNCOscale1,phaseAdjust1,normBandwidth1,ncoOut_I,prevstate1);
 
         fmPll_RDS(reco_filt,PLLfreq,PLLfs,
         PLLNCOscale,phaseAdjust,normBandwidth,ncoOut_Q,prevstate);
         
-        RDS_Q.resize(ncoOut_I.size());
-        RDS_I.resize(ncoOut_I.size());
+        RDS_Q.resize(extr_filt.size()*19);
+        RDS_I.resize(extr_filt.size()*19);
         for(auto i = 0 ; i< extr_filt.size() ; i++){
-            RDS_I[i] = ncoOut_I[i] * extr_filt[i] * 2;
-            RDS_Q[i] = ncoOut_Q[i] * extr_filt[i] * 2;
+            RDS_Q[i*19] = ncoOut_I[i] * extr_filt[i] * 2;
+            RDS_I[i*19] = ncoOut_Q[i] * extr_filt[i] * 2;
         }
 
+
+        //////I and Q swapped ^^^^^^^
+
         // convolve_UPSAMPLE_N_dec(decimator, 24, stereo_data_ds, stereo_data, audio_coeff,state_stereo_data);
-        convolve_UPSAMPLE_N_dec(80, 19, RDS_I_filt, RDS_I, rds_3k_coeff,state_RDS_I);
+        //convolve_UPSAMPLE_N_dec(80, 19, RDS_I_filt, RDS_I, rds_3k_coeff,state_RDS_I);
         
 
-        //convolveFIR_N_dec(80,RDS_I_filt,RDS_I,rds_3k_coeff,state_RDS_I);
-        //convolveFIR_N_dec(80,RDS_Q_filt,RDS_Q,rds_3k_coeff,state_RDS_Q);
+        convolveFIR_N_dec(80,RDS_I_filt,RDS_I,rds_3k_coeff,state_RDS_I);
+        convolveFIR_N_dec(80,RDS_Q_filt,RDS_Q,rds_3k_coeff,state_RDS_Q);
+
+        // RDS_I_filt_ds.resize(trunc(RDS_I.size()/80));
+        // RDS_Q_filt_ds.resize(trunc(RDS_I.size()/80));
+
+        // for(auto i = 0 ; i < RDS_I_filt_ds.size() ; i++){
+        //     RDS_I_filt_ds[i] = RDS_I_filt[80*i];
+        //     RDS_Q_filt_ds[i] = RDS_Q_filt[80*i];
+        // }
         
 
         convolveFIR_N_dec(1,RRC_I,RDS_I_filt,rrc_coeff,state_RRC_I);
 
-        convolve_UPSAMPLE_N_dec(80, 19, RDS_Q_filt, RDS_Q, rds_3k_coeff,state_RDS_Q);
+        //convolve_UPSAMPLE_N_dec(80, 19, RDS_Q_filt, RDS_Q, rds_3k_coeff,state_RDS_Q);
         
         convolveFIR_N_dec(1,RRC_Q,RDS_Q_filt,rrc_coeff,state_RRC_Q);
         
@@ -1460,225 +1479,66 @@ while(true){
             logVector("RRC_coeff0",vector_index,rrc_coeff );
         }
 
+        if(block_count == 14){
+            //std::vector<float> vector_index;
+            //genIndexVector(vector_index,RRC_I.size());
+            logVector2("RRC_I_c2",RRC_I_samples,RRC_Q_samples );
+
+            std::vector<float> vector_index;
+            genIndexVector(vector_index,RRC_I.size());
+            logVector("RRC_I2",vector_index,RRC_I );
+
+            //std::vector<float> vector_index;
+            genIndexVector(vector_index,RRC_Q.size());
+            logVector("RRC_Q2",vector_index,RRC_Q );
+
+            //std::vector<float> vector_index;
+            genIndexVector(vector_index,rrc_coeff.size());
+            logVector("RRC_coeff2",vector_index,rrc_coeff );
+        }
+
+        if(block_count == 3){
+            //std::vector<float> vector_index;
+            //genIndexVector(vector_index,RRC_I.size());
+            logVector2("RRC_I_c3",RRC_I_samples,RRC_Q_samples );
+
+            std::vector<float> vector_index;
+            genIndexVector(vector_index,RRC_I.size());
+            logVector("RRC_I3",vector_index,RRC_I );
+
+            //std::vector<float> vector_index;
+            genIndexVector(vector_index,RRC_Q.size());
+            logVector("RRC_Q3",vector_index,RRC_Q );
+
+            //std::vector<float> vector_index;
+            genIndexVector(vector_index,rrc_coeff.size());
+            logVector("RRC_coeff3",vector_index,rrc_coeff );
+        }
+
+        if(block_count == 4){
+            //std::vector<float> vector_index;
+            //genIndexVector(vector_index,RRC_I.size());
+            logVector2("RRC_I_c4",RRC_I_samples,RRC_Q_samples );
+
+            std::vector<float> vector_index;
+            genIndexVector(vector_index,RRC_I.size());
+            logVector("RRC_I4",vector_index,RRC_I );
+
+            //std::vector<float> vector_index;
+            genIndexVector(vector_index,RRC_Q.size());
+            logVector("RRC_Q4",vector_index,RRC_Q );
+
+            //std::vector<float> vector_index;
+            genIndexVector(vector_index,rrc_coeff.size());
+            logVector("RRC_coeff4",vector_index,rrc_coeff );
+        }
+
 
         ////////Symbol Analysis
         HH_LL_detected = 0;
         error_counter = 0;
         binary_data.clear();
         
-        // if(bin_50_state == 0){
-        //     if(bin_50 == 0){
-        //         binary_data.resize(25,0.0);
-
-        //         for(auto i = 0; i <binary_data.size(); i++){
-        //             if(RRC_I_samples[2*i+1] > 0 && RRC_I_samples[2*i] < 0)       //LH
-        //                 binary_data[i] = 0;
-        //             else if(RRC_I_samples[2*i+1] < 0 && RRC_I_samples[2*i] > 0)        //HL
-        //                 binary_data[i] = 1;
-        //             else{
-        //                 error_counter = error_counter + 1;
-        //                 if(error_counter == e_count_limit){
-        //                     HH_LL_detected = 1;
-        //                     bin_50_state = 0;
-        //                     next_symbol = RRC_I_samples[50];
-        //                     break;
-        //                 }else{
-        //                     if(abs(RRC_I_samples[2*i+1]) > abs(RRC_I_samples[2*i])){
-        //                         RRC_I_samples[2*i] = -1 * RRC_I_samples[2*i];
-        //                         if(RRC_I_samples[2*i+1] > 0 && RRC_I_samples[2*i] < 0)        //LH
-        //                             binary_data[i] = 0;
-        //                         else if(RRC_I_samples[2*i+1] < 0 && RRC_I_samples[2*i] > 0)        //HL
-        //                             binary_data[i] = 1;
-        //                     }else{
-        //                         RRC_I_samples[2*i+1] = -1 * RRC_I_samples[2*i+1];
-        //                         if(RRC_I_samples[2*i+1] > 0 && RRC_I_samples[2*i] < 0)        //LH
-        //                             binary_data[i] = 0;
-        //                         else if(RRC_I_samples[2*i+1] < 0 && RRC_I_samples[2*i] > 0)       //HL
-        //                             binary_data[i] = 1;
-        //                     }
-        //                 }
-        //             }
-        //         }
-        //         if(HH_LL_detected == 0){
-        //             bin_50_state = 1;
-        //             next_symbol = RRC_I_samples[50];
-        //         }
-        //     }else if(bin_50 == 1){
-        //         binary_data.resize(25,0.0);
-
-        //         for(auto i = 0; i <binary_data.size(); i++){
-        //             if(RRC_I_samples[2*i+1] > 0 && RRC_I_samples[2*i] < 0)        //LH
-        //                 binary_data[i] = 0;
-
-        //             else if(RRC_I_samples[2*i+1] < 0 && RRC_I_samples[2*i] > 0)        //HL
-        //                 binary_data[i] = 1;
-        //             else{
-        //                 error_counter = error_counter + 1;
-        //                 if(error_counter == e_count_limit){
-        //                     HH_LL_detected = 1;
-        //                     bin_50_state = 1;
-        //                     next_symbol = RRC_I_samples[49];
-        //                     break;
-        //                 }else{
-        //                     if(abs(RRC_I_samples[2*i+1]) > abs(RRC_I_samples[2*i])){
-        //                         RRC_I_samples[2*i] = -1 * RRC_I_samples[2*i];
-        //                         if(RRC_I_samples[2*i+1] > 0 && RRC_I_samples[2*i] < 0)        //LH
-        //                             binary_data[i] = 0;
-        //                         else if(RRC_I_samples[2*i+1] < 0 && RRC_I_samples[2*i] > 0)        //HL
-        //                             binary_data[i] = 1;
-        //                     }else{
-        //                         RRC_I_samples[2*i+1] = -1 * RRC_I_samples[2*i+1];
-        //                         if(RRC_I_samples[2*i+1] > 0 && RRC_I_samples[2*i] < 0)        //LH
-        //                             binary_data[i] = 0;
-        //                         else if(RRC_I_samples[2*i+1] < 0 && RRC_I_samples[2*i] > 0)        //HL
-        //                             binary_data[i] = 1;
-        //                     }
-        //                 }
-        //             }
-        //         }
-        //         if(HH_LL_detected == 0){
-        //             bin_50_state = 0;
-        //             next_symbol = RRC_I_samples[50];
-        //         }
-        //     }
-        // }else if(bin_50_state == 1){
-        //     if(bin_50 == 0){
-        //         binary_data.resize(26,0.0);
-
-        //         if(RRC_I_samples[0] > 0 && next_symbol < 0)       //LH
-        //             binary_data[0] = 0;
-
-        //         else if(RRC_I_samples[0] < 0 && next_symbol > 0)       //HL
-        //             binary_data[0] = 1;
-        //         else{
-        //             error_counter = error_counter + 1;
-        //             if(error_counter == e_count_limit){
-        //                 HH_LL_detected = 1;
-        //                 bin_50_state = 1;
-        //                 next_symbol = RRC_I_samples[50];
-        //             }else{
-        //                 if(abs(RRC_I_samples[0]) > abs(next_symbol)){
-        //                     next_symbol = -1 * next_symbol;
-        //                     if(RRC_I_samples[0] > 0 && next_symbol < 0)       //LH
-        //                         binary_data[0] = 0;
-        //                     else if(RRC_I_samples[0] < 0 && next_symbol > 0)       //HL
-        //                         binary_data[0] = 1;
-        //                 }else{
-        //                     RRC_I_samples[0] = -1 * RRC_I_samples[0];
-        //                     if(RRC_I_samples[0] > 0 && next_symbol < 0)        //LH
-        //                         binary_data[0] = 0;
-        //                     else if(RRC_I_samples[0] < 0 && next_symbol > 0)        //HL
-        //                         binary_data[0] = 1;
-        //                 }
-        //             }
-        //         }
-
-        //         if(HH_LL_detected == 0){
-        //             for(auto i = 1; i <binary_data.size(); i++){
-        //                 if(RRC_I_samples[2*i] > 0 && RRC_I_samples[2*i-1] < 0)        //LH
-        //                     binary_data[i] = 0;
-
-        //                 else if(RRC_I_samples[2*i] < 0 && RRC_I_samples[2*i-1] > 0)        //HL
-        //                     binary_data[i] = 1;
-        //                 else{
-        //                     error_counter = error_counter + 1;
-        //                     if(error_counter == e_count_limit){
-        //                         HH_LL_detected = 1;
-        //                         bin_50_state = 1;
-        //                         next_symbol = RRC_I_samples[50];
-        //                         break;
-        //                     }else{
-        //                         if(abs(RRC_I_samples[2*i]) > abs(RRC_I_samples[2*i-1])){
-        //                             RRC_I_samples[2*i-1] = -1 * RRC_I_samples[2*i-1];
-        //                             if(RRC_I_samples[2*i] > 0 && RRC_I_samples[2*i-1] < 0)        //LH
-        //                                 binary_data[i] = 0;
-        //                             else if(RRC_I_samples[2*i] < 0 && RRC_I_samples[2*i-1] > 0)        //HL
-        //                                 binary_data[i] = 1;
-        //                         }else{
-        //                             RRC_I_samples[2*i] = -1 * RRC_I_samples[2*i];
-        //                             if(RRC_I_samples[2*i] > 0 && RRC_I_samples[2*i-1] < 0)        //LH
-        //                                 binary_data[i] = 0;
-        //                             else if(RRC_I_samples[2*i] < 0 && RRC_I_samples[2*i-1] > 0)        //HL
-        //                                 binary_data[i] = 1;
-        //                         }
-        //                     }
-        //                 }
-        //             }
-        //         }
-        //         if(HH_LL_detected == 0){
-        //             bin_50_state = 0;
-        //             next_symbol = RRC_I_samples[50];
-        //         }
-        //     }else if(bin_50 == 1){
-        //         binary_data.resize(25,0.0);
-
-        //         if(RRC_I_samples[0] > 0 && next_symbol < 0)        //LH
-        //             binary_data[0] = 0;
-
-        //         else if(RRC_I_samples[0] < 0 && next_symbol > 0)        //HL
-        //             binary_data[0] = 1;
-        //         else{
-        //             error_counter = error_counter + 1;
-        //             if(error_counter == e_count_limit){
-        //                 HH_LL_detected = 1;
-        //                 bin_50_state = 0;
-        //                 next_symbol = RRC_I_samples[49];
-        //             }else{
-        //                 if(abs(RRC_I_samples[0]) > abs(next_symbol)){
-        //                     next_symbol = -1 * next_symbol;
-        //                     if(RRC_I_samples[0] > 0 && next_symbol < 0)        //LH
-        //                         binary_data[0] = 0;
-        //                     else if(RRC_I_samples[0] < 0 && next_symbol > 0)        //HL
-        //                         binary_data[0] = 1;
-        //                 }else{
-        //                     RRC_I_samples[0] = -1 * RRC_I_samples[0];
-        //                     if(RRC_I_samples[0] > 0 && next_symbol < 0)        //LH
-        //                         binary_data[0] = 0;
-        //                     else if(RRC_I_samples[0] < 0 && next_symbol > 0)        //HL
-        //                         binary_data[0] = 1;
-        //                 }
-        //             }
-        //         }
-        //         if(HH_LL_detected == 0){
-        //             for(auto i = 1; i <binary_data.size(); i++){
-        //                 if(RRC_I_samples[2*i] > 0 && RRC_I_samples[2*i-1] < 0)        //LH
-        //                     binary_data[i] = 0;
-
-        //                 else if(RRC_I_samples[2*i] < 0 && RRC_I_samples[2*i-1] > 0)        //HL
-        //                     binary_data[i] = 1;
-        //                 else{
-        //                     error_counter = error_counter + 1;
-        //                     if(error_counter == e_count_limit){
-        //                         HH_LL_detected = 1;
-        //                         bin_50_state = 0;
-        //                         next_symbol = RRC_I_samples[49];
-        //                         break;
-        //                     }else{
-        //                         if(abs(RRC_I_samples[2*i]) > abs(RRC_I_samples[2*i-1])){
-        //                             RRC_I_samples[2*i-1] = -1 * RRC_I_samples[2*i-1];
-        //                             if(RRC_I_samples[2*i] > 0 && RRC_I_samples[2*i-1] < 0)        //LH
-        //                                 binary_data[i] = 0;
-        //                             else if(RRC_I_samples[2*i] < 0 && RRC_I_samples[2*i-1] > 0)        //HL
-        //                                 binary_data[i] = 1;
-        //                         }else{
-        //                             RRC_I_samples[2*i] = -1 * RRC_I_samples[2*i];
-        //                             if(RRC_I_samples[2*i] > 0 && RRC_I_samples[2*i-1] < 0)        //LH
-        //                                 binary_data[i] = 0;
-        //                             else if(RRC_I_samples[2*i] < 0 && RRC_I_samples[2*i-1] > 0)        //HL
-        //                                 binary_data[i] = 1;
-        //                         }
-        //                     }
-        //                 }
-        //             }
-        //         }
-        //         if(HH_LL_detected == 0){
-        //             bin_50_state = 1;
-        //             next_symbol = RRC_I_samples[49];
-        //         }
-        //     }
-        // }
-
-        //std::cerr << "next_symbol start" <<next_symbol<< " \n";
         if(bin_50_state == 0){
             if(bin_50 == 0){
                 binary_data.resize(25,0.0);
@@ -1696,10 +1556,17 @@ while(true){
                             next_symbol = RRC_I_samples[50];
                             break;
                         }else{
-                            if(RRC_I_samples[2*i+1] > RRC_I_samples[2*i]){     //LH
+                            if(abs(RRC_I_samples[2*i+1]) > abs(RRC_I_samples[2*i])){
+                                RRC_I_samples[2*i] = -1 * RRC_I_samples[2*i];
+                                if(RRC_I_samples[2*i+1] > 0 && RRC_I_samples[2*i] < 0)        //LH
                                     binary_data[i] = 0;
-                                
+                                else if(RRC_I_samples[2*i+1] < 0 && RRC_I_samples[2*i] > 0)        //HL
+                                    binary_data[i] = 1;
                             }else{
+                                RRC_I_samples[2*i+1] = -1 * RRC_I_samples[2*i+1];
+                                if(RRC_I_samples[2*i+1] > 0 && RRC_I_samples[2*i] < 0)        //LH
+                                    binary_data[i] = 0;
+                                else if(RRC_I_samples[2*i+1] < 0 && RRC_I_samples[2*i] > 0)       //HL
                                     binary_data[i] = 1;
                             }
                         }
@@ -1726,10 +1593,17 @@ while(true){
                             next_symbol = RRC_I_samples[49];
                             break;
                         }else{
-                            if(RRC_I_samples[2*i+1] > RRC_I_samples[2*i]){        //LH
+                            if(abs(RRC_I_samples[2*i+1]) > abs(RRC_I_samples[2*i])){
+                                RRC_I_samples[2*i] = -1 * RRC_I_samples[2*i];
+                                if(RRC_I_samples[2*i+1] > 0 && RRC_I_samples[2*i] < 0)        //LH
                                     binary_data[i] = 0;
-                                
-                            }else{       //HL
+                                else if(RRC_I_samples[2*i+1] < 0 && RRC_I_samples[2*i] > 0)        //HL
+                                    binary_data[i] = 1;
+                            }else{
+                                RRC_I_samples[2*i+1] = -1 * RRC_I_samples[2*i+1];
+                                if(RRC_I_samples[2*i+1] > 0 && RRC_I_samples[2*i] < 0)        //LH
+                                    binary_data[i] = 0;
+                                else if(RRC_I_samples[2*i+1] < 0 && RRC_I_samples[2*i] > 0)        //HL
                                     binary_data[i] = 1;
                             }
                         }
@@ -1756,10 +1630,17 @@ while(true){
                         bin_50_state = 1;
                         next_symbol = RRC_I_samples[50];
                     }else{
-                        if(RRC_I_samples[0] > next_symbol){      //LH
+                        if(abs(RRC_I_samples[0]) > abs(next_symbol)){
+                            next_symbol = -1 * next_symbol;
+                            if(RRC_I_samples[0] > 0 && next_symbol < 0)       //LH
                                 binary_data[0] = 0;
-                            
-                        }else{      //HL
+                            else if(RRC_I_samples[0] < 0 && next_symbol > 0)       //HL
+                                binary_data[0] = 1;
+                        }else{
+                            RRC_I_samples[0] = -1 * RRC_I_samples[0];
+                            if(RRC_I_samples[0] > 0 && next_symbol < 0)        //LH
+                                binary_data[0] = 0;
+                            else if(RRC_I_samples[0] < 0 && next_symbol > 0)        //HL
                                 binary_data[0] = 1;
                         }
                     }
@@ -1780,9 +1661,17 @@ while(true){
                                 next_symbol = RRC_I_samples[50];
                                 break;
                             }else{
-                                if(RRC_I_samples[2*i] > RRC_I_samples[2*i-1]){        //LH
+                                if(abs(RRC_I_samples[2*i]) > abs(RRC_I_samples[2*i-1])){
+                                    RRC_I_samples[2*i-1] = -1 * RRC_I_samples[2*i-1];
+                                    if(RRC_I_samples[2*i] > 0 && RRC_I_samples[2*i-1] < 0)        //LH
                                         binary_data[i] = 0;
-                                }else{     //HL
+                                    else if(RRC_I_samples[2*i] < 0 && RRC_I_samples[2*i-1] > 0)        //HL
+                                        binary_data[i] = 1;
+                                }else{
+                                    RRC_I_samples[2*i] = -1 * RRC_I_samples[2*i];
+                                    if(RRC_I_samples[2*i] > 0 && RRC_I_samples[2*i-1] < 0)        //LH
+                                        binary_data[i] = 0;
+                                    else if(RRC_I_samples[2*i] < 0 && RRC_I_samples[2*i-1] > 0)        //HL
                                         binary_data[i] = 1;
                                 }
                             }
@@ -1808,9 +1697,17 @@ while(true){
                         bin_50_state = 0;
                         next_symbol = RRC_I_samples[49];
                     }else{
-                        if(RRC_I_samples[0] > next_symbol){       //LH
+                        if(abs(RRC_I_samples[0]) > abs(next_symbol)){
+                            next_symbol = -1 * next_symbol;
+                            if(RRC_I_samples[0] > 0 && next_symbol < 0)        //LH
                                 binary_data[0] = 0;
-                        }else{       //HL
+                            else if(RRC_I_samples[0] < 0 && next_symbol > 0)        //HL
+                                binary_data[0] = 1;
+                        }else{
+                            RRC_I_samples[0] = -1 * RRC_I_samples[0];
+                            if(RRC_I_samples[0] > 0 && next_symbol < 0)        //LH
+                                binary_data[0] = 0;
+                            else if(RRC_I_samples[0] < 0 && next_symbol > 0)        //HL
                                 binary_data[0] = 1;
                         }
                     }
@@ -1830,9 +1727,17 @@ while(true){
                                 next_symbol = RRC_I_samples[49];
                                 break;
                             }else{
-                                if(RRC_I_samples[2*i] > RRC_I_samples[2*i-1]){        //LH
+                                if(abs(RRC_I_samples[2*i]) > abs(RRC_I_samples[2*i-1])){
+                                    RRC_I_samples[2*i-1] = -1 * RRC_I_samples[2*i-1];
+                                    if(RRC_I_samples[2*i] > 0 && RRC_I_samples[2*i-1] < 0)        //LH
                                         binary_data[i] = 0;
-                                }else{       //HL
+                                    else if(RRC_I_samples[2*i] < 0 && RRC_I_samples[2*i-1] > 0)        //HL
+                                        binary_data[i] = 1;
+                                }else{
+                                    RRC_I_samples[2*i] = -1 * RRC_I_samples[2*i];
+                                    if(RRC_I_samples[2*i] > 0 && RRC_I_samples[2*i-1] < 0)        //LH
+                                        binary_data[i] = 0;
+                                    else if(RRC_I_samples[2*i] < 0 && RRC_I_samples[2*i-1] > 0)        //HL
                                         binary_data[i] = 1;
                                 }
                             }
@@ -1845,6 +1750,175 @@ while(true){
                 }
             }
         }
+
+        //std::cerr << "next_symbol start" <<next_symbol<< " \n";
+
+        // // if(bin_50_state == 0){
+        // //     if(bin_50 == 0){
+        // //         binary_data.resize(25,0.0);
+
+        // //         for(auto i = 0; i <binary_data.size(); i++){
+        // //             if(RRC_I_samples[2*i+1] > 0 && RRC_I_samples[2*i] < 0)       //LH
+        // //                 binary_data[i] = 0;
+        // //             else if(RRC_I_samples[2*i+1] < 0 && RRC_I_samples[2*i] > 0)        //HL
+        // //                 binary_data[i] = 1;
+        // //             else{
+        // //                 error_counter = error_counter + 1;
+        // //                 if(error_counter == e_count_limit){
+        // //                     HH_LL_detected = 1;
+        // //                     bin_50_state = 0;
+        // //                     next_symbol = RRC_I_samples[50];
+        // //                     break;
+        // //                 }else{
+        // //                     if(RRC_I_samples[2*i+1] > RRC_I_samples[2*i]){     //LH
+        // //                             binary_data[i] = 0;
+                                
+        // //                     }else{
+        // //                             binary_data[i] = 1;
+        // //                     }
+        // //                 }
+        // //             }
+        // //         }
+        // //         if(HH_LL_detected == 0){
+        // //             bin_50_state = 1;
+        // //             next_symbol = RRC_I_samples[50];
+        // //         }
+        // //     }else if(bin_50 == 1){
+        // //         binary_data.resize(25,0.0);
+
+        // //         for(auto i = 0; i <binary_data.size(); i++){
+        // //             if(RRC_I_samples[2*i+1] > 0 && RRC_I_samples[2*i] < 0)        //LH
+        // //                 binary_data[i] = 0;
+
+        // //             else if(RRC_I_samples[2*i+1] < 0 && RRC_I_samples[2*i] > 0)        //HL
+        // //                 binary_data[i] = 1;
+        // //             else{
+        // //                 error_counter = error_counter + 1;
+        // //                 if(error_counter == e_count_limit){
+        // //                     HH_LL_detected = 1;
+        // //                     bin_50_state = 1;
+        // //                     next_symbol = RRC_I_samples[49];
+        // //                     break;
+        // //                 }else{
+        // //                     if(RRC_I_samples[2*i+1] > RRC_I_samples[2*i]){        //LH
+        // //                             binary_data[i] = 0;
+                                
+        // //                     }else{       //HL
+        // //                             binary_data[i] = 1;
+        // //                     }
+        // //                 }
+        // //             }
+        // //         }
+        // //         if(HH_LL_detected == 0){
+        // //             bin_50_state = 0;
+        // //             next_symbol = RRC_I_samples[50];
+        // //         }
+        // //     }
+        // // }else if(bin_50_state == 1){
+        // //     if(bin_50 == 0){
+        // //         binary_data.resize(26,0.0);
+
+        // //         if(RRC_I_samples[0] > 0 && next_symbol < 0)       //LH
+        // //             binary_data[0] = 0;
+
+        // //         else if(RRC_I_samples[0] < 0 && next_symbol > 0)       //HL
+        // //             binary_data[0] = 1;
+        // //         else{
+        // //             error_counter = error_counter + 1;
+        // //             if(error_counter == e_count_limit){
+        // //                 HH_LL_detected = 1;
+        // //                 bin_50_state = 1;
+        // //                 next_symbol = RRC_I_samples[50];
+        // //             }else{
+        // //                 if(RRC_I_samples[0] > next_symbol){      //LH
+        // //                         binary_data[0] = 0;
+                            
+        // //                 }else{      //HL
+        // //                         binary_data[0] = 1;
+        // //                 }
+        // //             }
+        // //         }
+
+        // //         if(HH_LL_detected == 0){
+        // //             for(auto i = 1; i <binary_data.size(); i++){
+        // //                 if(RRC_I_samples[2*i] > 0 && RRC_I_samples[2*i-1] < 0)        //LH
+        // //                     binary_data[i] = 0;
+
+        // //                 else if(RRC_I_samples[2*i] < 0 && RRC_I_samples[2*i-1] > 0)        //HL
+        // //                     binary_data[i] = 1;
+        // //                 else{
+        // //                     error_counter = error_counter + 1;
+        // //                     if(error_counter == e_count_limit){
+        // //                         HH_LL_detected = 1;
+        // //                         bin_50_state = 1;
+        // //                         next_symbol = RRC_I_samples[50];
+        // //                         break;
+        // //                     }else{
+        // //                         if(RRC_I_samples[2*i] > RRC_I_samples[2*i-1]){        //LH
+        // //                                 binary_data[i] = 0;
+        // //                         }else{     //HL
+        // //                                 binary_data[i] = 1;
+        // //                         }
+        // //                     }
+        // //                 }
+        // //             }
+        // //         }
+        // //         if(HH_LL_detected == 0){
+        // //             bin_50_state = 0;
+        // //             next_symbol = RRC_I_samples[50];
+        // //         }
+        // //     }else if(bin_50 == 1){
+        // //         binary_data.resize(25,0.0);
+
+        // //         if(RRC_I_samples[0] > 0 && next_symbol < 0)        //LH
+        // //             binary_data[0] = 0;
+
+        // //         else if(RRC_I_samples[0] < 0 && next_symbol > 0)        //HL
+        // //             binary_data[0] = 1;
+        // //         else{
+        // //             error_counter = error_counter + 1;
+        // //             if(error_counter == e_count_limit){
+        // //                 HH_LL_detected = 1;
+        // //                 bin_50_state = 0;
+        // //                 next_symbol = RRC_I_samples[49];
+        // //             }else{
+        // //                 if(RRC_I_samples[0] > next_symbol){       //LH
+        // //                         binary_data[0] = 0;
+        // //                 }else{       //HL
+        // //                         binary_data[0] = 1;
+        // //                 }
+        // //             }
+        // //         }
+        // //         if(HH_LL_detected == 0){
+        // //             for(auto i = 1; i <binary_data.size(); i++){
+        // //                 if(RRC_I_samples[2*i] > 0 && RRC_I_samples[2*i-1] < 0)        //LH
+        // //                     binary_data[i] = 0;
+
+        // //                 else if(RRC_I_samples[2*i] < 0 && RRC_I_samples[2*i-1] > 0)        //HL
+        // //                     binary_data[i] = 1;
+        // //                 else{
+        // //                     error_counter = error_counter + 1;
+        // //                     if(error_counter == e_count_limit){
+        // //                         HH_LL_detected = 1;
+        // //                         bin_50_state = 0;
+        // //                         next_symbol = RRC_I_samples[49];
+        // //                         break;
+        // //                     }else{
+        // //                         if(RRC_I_samples[2*i] > RRC_I_samples[2*i-1]){        //LH
+        // //                                 binary_data[i] = 0;
+        // //                         }else{       //HL
+        // //                                 binary_data[i] = 1;
+        // //                         }
+        // //                     }
+        // //                 }
+        // //             }
+        // //         }
+        // //         if(HH_LL_detected == 0){
+        // //             bin_50_state = 1;
+        // //             next_symbol = RRC_I_samples[49];
+        // //         }
+        // //     }
+        // // }
 
         //std::cerr << "HHLL " << ((error_counter == e_count_limit) ? "Detected" : "No!") <<" - Block: " << block_count << " \n";
         //printRealVectorint(binary_data);

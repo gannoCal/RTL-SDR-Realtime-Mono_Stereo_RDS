@@ -326,7 +326,7 @@ std::vector< std::vector<int> > &parityArray, std::vector<int> &syndrome){
             ele[1] = 0;
             found_array.insert(found_array.end(),ele);
             previous_match=(int)'D';
-            std::cerr << ("Found code A") << "\n";
+            //std::cerr << ("Found code A") << "\n";
         }
         else if (syndrome[i+0] == 1 &&
         syndrome[i+1] == 1 &&
@@ -344,7 +344,7 @@ std::vector< std::vector<int> > &parityArray, std::vector<int> &syndrome){
             ele[1] = 0;
             found_array.insert(found_array.end(),ele);
             previous_match=(int)'A';
-            std::cerr << ("Found code B")<< "\n";
+            //std::cerr << ("Found code B")<< "\n";
         }
         else if (syndrome[i+0] == 1 &&
         syndrome[i+1] == 0 &&
@@ -362,7 +362,7 @@ std::vector< std::vector<int> > &parityArray, std::vector<int> &syndrome){
             ele[1] = 0;
             found_array.insert(found_array.end(),ele);
             previous_match=(int)'B';
-            std::cerr << ("Found code C")<< "\n";
+            //std::cerr << ("Found code C")<< "\n";
         }
         else if (syndrome[i+0] == 1 &&
         syndrome[i+1] == 1 &&
@@ -380,7 +380,7 @@ std::vector< std::vector<int> > &parityArray, std::vector<int> &syndrome){
             ele[1] = 0;
             found_array.insert(found_array.end(),ele);
             previous_match=(int)'B';
-            std::cerr << ("Found code C")<< "\n";
+            //std::cerr << ("Found code C")<< "\n";
         }
         else if (syndrome[i+0] == 1 &&
         syndrome[i+1] == 0 &&
@@ -398,7 +398,7 @@ std::vector< std::vector<int> > &parityArray, std::vector<int> &syndrome){
             ele[1] = 0;
             found_array.insert(found_array.end(),ele);
             previous_match=(int)'C';
-            std::cerr << ("Found code D")<< "\n";
+            //std::cerr << ("Found code D")<< "\n";
         }
 
     
