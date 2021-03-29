@@ -40,15 +40,14 @@ int main(int argc,char** argv)
 	std::vector<double> prevstate(6,0);
 
 	std::vector<double> rds_carrier((int)(block_size)/20, 0); // get from before
-	std::vector<double> logicdata((int)(block_size)/20, 0);
-	std::vector<double> logicdata_ds((int)(block_size)/20, 0);
+	std::vector<double> logicdata(1, 0);
+	std::vector<double> logicdata_ds;
 	std::vector<double>rds_data_ds((int)(block_size)/20, 0);
 	std::vector<double> rds_data_RRC((int)(block_size)/20, 0);
-	std::vector<double> RDS_coeff((int)(block_size)/20, 0);
-	std::vector<double> rds_coeff((int)(block_size)/20, 0);
-	std::vector<double> state((int)(block_size)/20, 0);
+	std::vector<double> rds_coeff;
+	std::vector<double> state(num_taps-1, 0);
 	std::vector<double> state_rds_data((int)(block_size)/20, 0);
-	std::vector<double> impulseResponseRRC((int)(block_size)/20, 0);
+	std::vector<double> impulseResponseRRC;
 
 /////// MIXER SHIT - ENDp
 while ((block_count+1)*block_size < rds_carrier.size() /*&& iii == 0*/)
@@ -67,7 +66,7 @@ while ((block_count+1)*block_size < rds_carrier.size() /*&& iii == 0*/)
 
 
 
-	impulseResponseLPF( Fs, Fc, num_taps,RDS_coeff, 1);
+	impulseResponseLPF( Fs, Fc, num_taps,rds_coeff, 1);
 	resampler(upsample,downsample, rds_data_ds, rds_ds, rds_coeff,state_rds_data);
 
 	// low pass + resampler - end

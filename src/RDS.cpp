@@ -79,8 +79,7 @@ void Manchester_and_differntial(std::vector<double> rds_data_RRC, int sample_poi
 	// since we want to get the middle sample lets offset
 	// 1 represnts a high , 0 represents a below
 	// MAnchester coding HL -> 1. LH -> 0
-
-	std::vector<double> prediff(rds_data_RRC.size(), 0.0);
+	std::vector<double> prediff((int)rds_data_RRC.size()/24, 0.0);
 	auto counter = 0;
 	for(auto i = sample_point; i < rds_data_RRC.size();i = i + 2*sample_point)
 	{
