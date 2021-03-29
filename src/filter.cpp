@@ -11,6 +11,22 @@ Ontario, Canada
 #include <math.h>
 #define PI 3.14159265358979323846
 // function to compute the impulse response "h" based on the sinc function
+
+inline double angle_norm(double x)
+{
+    x = fmod(x + PI, 2*PI);
+    if (x < 0)
+        x += 2*PI;
+    return x - PI;
+}
+
+double phase_unwrap(double prev, double now)
+{
+    return prev + angle_norm(now - prev);
+}
+
+
+
 void impulseResponseLPF(double Fs, double Fc, unsigned short int num_taps, std::vector<double> &h, double decim)
 {
 	
@@ -155,6 +171,19 @@ void fmDemodArctanBlock(std::vector<double> &fm_demod,std::vector<double> &I, st
 	prev_phase.resize(2);
 	prev_phase[0] = Q[Q.size() - 1];
 	prev_phase[1] = I[I.size() - 1];
+}
+
+void fmDemodArctanBlockSlow(std::vector<double> &fm_demod,std::vector<double> &I, std::vector<double> &Q,std::vector<double> &prev_phase){
+	fm_demod.resize(I.size(), 0.0);
+	double thetadelta = 0, a, b, c, current_phase;
+	for(auto n = 0; n < I.size(); n++){
+		current_phase = atan2(Q[n], I[n]);
+
+        //phase_unwrap(prev_phase[0],current_phase)
+        fm_demod[n] = current_phase - prev_phase[0];
+	}
+	prev_phase.resize(1);
+	prev_phase[0] = current_phase;
 }
 
 

@@ -271,7 +271,17 @@ void RDS_0(
     const int &rds_exreco_taps,
     std::queue<std::vector<double>> &my_queue,
     std::mutex &my_mutex,
-    std::condition_variable &my_cvar
+    std::condition_variable &my_cvar,
+    std::queue<std::vector<int>> &out_queue,
+    std::mutex &out_mutex,
+    std::condition_variable &out_cvar
+);
+
+
+void RDS_1(
+    std::queue<std::vector<int>> &in_queue,
+    std::mutex &in_mutex,
+    std::condition_variable &in_cvar
 );
 
 
@@ -505,10 +515,15 @@ int main(int argc,char* argv[])
 
     std::queue<std::vector<double>> my_queue;
     std::queue<std::vector<double>> RDS_queue;
+    std::queue<std::vector<int>> chester_queue;
+
     std::mutex my_mutex;
     std::condition_variable my_cvar;
     std::mutex RDS_mutex;
     std::condition_variable RDS_cvar;
+
+    std::mutex chester_mutex;
+    std::condition_variable chester_cvar;
 
 
     
@@ -579,7 +594,17 @@ int main(int argc,char* argv[])
             std::cref(rds_exreco_taps),
             std::ref(RDS_queue),
             std::ref(RDS_mutex),
-            std::ref(RDS_cvar)
+            std::ref(RDS_cvar),
+            std::ref(chester_queue),
+            std::ref(chester_mutex),
+            std::ref(chester_cvar)
+        );
+
+        std::thread rds1 = std::thread(    
+            RDS_1,
+            std::ref(chester_queue),
+            std::ref(chester_mutex),
+            std::ref(chester_cvar)
         );
 
 
@@ -616,6 +641,7 @@ int main(int argc,char* argv[])
         fe.join();
         //rdsfe.join();
         rds0.join();
+        rds1.join();
         audio.join();
 //         /////////////////////////////////////////////////////////Stereo_float_0/////////////////////////////////////////////////////////
 //         }else{
@@ -1135,7 +1161,10 @@ void RDS_0(
     const int &rds_exreco_taps,
     std::queue<std::vector<double>> &my_queue,
     std::mutex &my_mutex,
-    std::condition_variable &my_cvar
+    std::condition_variable &my_cvar,
+    std::queue<std::vector<int>> &out_queue,
+    std::mutex &out_mutex,
+    std::condition_variable &out_cvar
 ){
 
     
@@ -1205,7 +1234,7 @@ void RDS_0(
 
     std::vector<double> rds_3k_coeff;
 
-    impulseResponseLPF(240e3, 3e3, rds_exreco_taps, rds_3k_coeff,1);
+    impulseResponseLPF(240e3*19, 3e3, rds_exreco_taps, rds_3k_coeff,1);
 
     std::vector<double> rrc_coeff;
     impulseResponseRootRaisedCosine(57e3,rds_exreco_taps,rrc_coeff);
@@ -1231,14 +1260,14 @@ void RDS_0(
     int shift_state = 0;
     int saved_i = 0;
 
-    int e_count_limit = 2;
+    int e_count_limit = 20;
     int HH_LL_detected;
     int error_counter;
 
     int bin_50_state = 0;
     double next_symbol = 0.0;
 
-    std::vector<double> binary_data;
+    std::vector<int> binary_data;
 
 
     
@@ -1248,45 +1277,45 @@ void RDS_0(
 
     ///////Other Thread
 
-    std::vector< std::vector<int> > parityArray = { {1,0,0,0,0,0,0,0,0,0}, 
-                        {0,1,0,0,0,0,0,0,0,0}, 
-                        {0,0,1,0,0,0,0,0,0,0}, 
-                        {0,0,0,1,0,0,0,0,0,0}, 
-                        {0,0,0,0,1,0,0,0,0,0}, 
-                        {0,0,0,0,0,1,0,0,0,0}, 
-                        {0,0,0,0,0,0,1,0,0,0}, 
-                        {0,0,0,0,0,0,0,1,0,0}, 
-                        {0,0,0,0,0,0,0,0,1,0}, 
-                        {0,0,0,0,0,0,0,0,0,1}, 
-                        {1,0,1,1,0,1,1,1,0,0}, 
-                        {0,1,0,1,1,0,1,1,1,0}, 
-                        {0,0,1,0,1,1,0,1,1,1}, 
-                        {1,0,1,0,0,0,0,1,1,1}, 
-                        {1,1,1,0,0,1,1,1,1,1}, 
-                        {1,1,0,0,0,1,0,0,1,1}, 
-                        {1,1,0,1,0,1,0,1,0,1}, 
-                        {1,1,0,1,1,1,0,1,1,0}, 
-                        {0,1,1,0,1,1,1,0,1,1}, 
-                        {1,0,0,0,0,0,0,0,0,1}, 
-                        {1,1,1,1,0,1,1,1,0,0}, 
-                        {0,1,1,1,1,0,1,1,1,0}, 
-                        {0,0,1,1,1,1,0,1,1,1}, 
-                        {1,0,1,0,1,0,0,1,1,1}, 
-                        {1,1,1,0,0,0,1,1,1,1}, 
-                        {1,1,0,0,0,1,1,0,1,1} }; 
+    // std::vector< std::vector<int> > parityArray = { {1,0,0,0,0,0,0,0,0,0}, 
+    //                     {0,1,0,0,0,0,0,0,0,0}, 
+    //                     {0,0,1,0,0,0,0,0,0,0}, 
+    //                     {0,0,0,1,0,0,0,0,0,0}, 
+    //                     {0,0,0,0,1,0,0,0,0,0}, 
+    //                     {0,0,0,0,0,1,0,0,0,0}, 
+    //                     {0,0,0,0,0,0,1,0,0,0}, 
+    //                     {0,0,0,0,0,0,0,1,0,0}, 
+    //                     {0,0,0,0,0,0,0,0,1,0}, 
+    //                     {0,0,0,0,0,0,0,0,0,1}, 
+    //                     {1,0,1,1,0,1,1,1,0,0}, 
+    //                     {0,1,0,1,1,0,1,1,1,0}, 
+    //                     {0,0,1,0,1,1,0,1,1,1}, 
+    //                     {1,0,1,0,0,0,0,1,1,1}, 
+    //                     {1,1,1,0,0,1,1,1,1,1}, 
+    //                     {1,1,0,0,0,1,0,0,1,1}, 
+    //                     {1,1,0,1,0,1,0,1,0,1}, 
+    //                     {1,1,0,1,1,1,0,1,1,0}, 
+    //                     {0,1,1,0,1,1,1,0,1,1}, 
+    //                     {1,0,0,0,0,0,0,0,0,1}, 
+    //                     {1,1,1,1,0,1,1,1,0,0}, 
+    //                     {0,1,1,1,1,0,1,1,1,0}, 
+    //                     {0,0,1,1,1,1,0,1,1,1}, 
+    //                     {1,0,1,0,1,0,0,1,1,1}, 
+    //                     {1,1,1,0,0,0,1,1,1,1}, 
+    //                     {1,1,0,0,0,1,1,0,1,1} }; 
 
-    std::vector<int> manchester_binary;
-    int manchester_binary_state;
+    // std::vector<int> manchester_binary;
+    // int manchester_binary_state;
 
-    std::vector<int> manchester_binary_processing_array(26);
+    // std::vector<int> manchester_binary_processing_array(26);
 
-    int previous_match = 0; 
-    int is_nSync = 0; 
-    int nSync_Hit_counter = 0; 
-    int nSync_Flop_counter = 0; 
-    int allowed_nSync_Flops = 6; 
-    std::vector<std::vector<int>> found_array;
-    std::vector<int> syndrome(10,0);
+    // int previous_match = 0; 
+    // int is_nSync = 0; 
+    // int nSync_Hit_counter = 0; 
+    // int nSync_Flop_counter = 0; 
+    // int allowed_nSync_Flops = 6; 
+    // std::vector<std::vector<int>> found_array;
+    // std::vector<int> syndrome(10,0);
 
 //printRealVectormdint(parityArray);
 
@@ -1339,7 +1368,7 @@ while(true){
 
         //convolveFIR_N_dec(80,RDS_I_filt,RDS_I,rds_3k_coeff,state_RDS_I);
         //convolveFIR_N_dec(80,RDS_Q_filt,RDS_Q,rds_3k_coeff,state_RDS_Q);
-
+        
 
         convolveFIR_N_dec(1,RRC_I,RDS_I_filt,rrc_coeff,state_RRC_I);
 
@@ -1413,12 +1442,243 @@ while(true){
             logVector("RRC_coeff",vector_index,rrc_coeff );
         }
 
+        if(block_count == 0){
+            //std::vector<float> vector_index;
+            //genIndexVector(vector_index,RRC_I.size());
+            logVector2("RRC_I_c0",RRC_I_samples,RRC_Q_samples );
+
+            std::vector<float> vector_index;
+            genIndexVector(vector_index,RRC_I.size());
+            logVector("RRC_I0",vector_index,RRC_I );
+
+            //std::vector<float> vector_index;
+            genIndexVector(vector_index,RRC_Q.size());
+            logVector("RRC_Q0",vector_index,RRC_Q );
+
+            //std::vector<float> vector_index;
+            genIndexVector(vector_index,rrc_coeff.size());
+            logVector("RRC_coeff0",vector_index,rrc_coeff );
+        }
+
 
         ////////Symbol Analysis
         HH_LL_detected = 0;
         error_counter = 0;
         binary_data.clear();
         
+        // if(bin_50_state == 0){
+        //     if(bin_50 == 0){
+        //         binary_data.resize(25,0.0);
+
+        //         for(auto i = 0; i <binary_data.size(); i++){
+        //             if(RRC_I_samples[2*i+1] > 0 && RRC_I_samples[2*i] < 0)       //LH
+        //                 binary_data[i] = 0;
+        //             else if(RRC_I_samples[2*i+1] < 0 && RRC_I_samples[2*i] > 0)        //HL
+        //                 binary_data[i] = 1;
+        //             else{
+        //                 error_counter = error_counter + 1;
+        //                 if(error_counter == e_count_limit){
+        //                     HH_LL_detected = 1;
+        //                     bin_50_state = 0;
+        //                     next_symbol = RRC_I_samples[50];
+        //                     break;
+        //                 }else{
+        //                     if(abs(RRC_I_samples[2*i+1]) > abs(RRC_I_samples[2*i])){
+        //                         RRC_I_samples[2*i] = -1 * RRC_I_samples[2*i];
+        //                         if(RRC_I_samples[2*i+1] > 0 && RRC_I_samples[2*i] < 0)        //LH
+        //                             binary_data[i] = 0;
+        //                         else if(RRC_I_samples[2*i+1] < 0 && RRC_I_samples[2*i] > 0)        //HL
+        //                             binary_data[i] = 1;
+        //                     }else{
+        //                         RRC_I_samples[2*i+1] = -1 * RRC_I_samples[2*i+1];
+        //                         if(RRC_I_samples[2*i+1] > 0 && RRC_I_samples[2*i] < 0)        //LH
+        //                             binary_data[i] = 0;
+        //                         else if(RRC_I_samples[2*i+1] < 0 && RRC_I_samples[2*i] > 0)       //HL
+        //                             binary_data[i] = 1;
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //         if(HH_LL_detected == 0){
+        //             bin_50_state = 1;
+        //             next_symbol = RRC_I_samples[50];
+        //         }
+        //     }else if(bin_50 == 1){
+        //         binary_data.resize(25,0.0);
+
+        //         for(auto i = 0; i <binary_data.size(); i++){
+        //             if(RRC_I_samples[2*i+1] > 0 && RRC_I_samples[2*i] < 0)        //LH
+        //                 binary_data[i] = 0;
+
+        //             else if(RRC_I_samples[2*i+1] < 0 && RRC_I_samples[2*i] > 0)        //HL
+        //                 binary_data[i] = 1;
+        //             else{
+        //                 error_counter = error_counter + 1;
+        //                 if(error_counter == e_count_limit){
+        //                     HH_LL_detected = 1;
+        //                     bin_50_state = 1;
+        //                     next_symbol = RRC_I_samples[49];
+        //                     break;
+        //                 }else{
+        //                     if(abs(RRC_I_samples[2*i+1]) > abs(RRC_I_samples[2*i])){
+        //                         RRC_I_samples[2*i] = -1 * RRC_I_samples[2*i];
+        //                         if(RRC_I_samples[2*i+1] > 0 && RRC_I_samples[2*i] < 0)        //LH
+        //                             binary_data[i] = 0;
+        //                         else if(RRC_I_samples[2*i+1] < 0 && RRC_I_samples[2*i] > 0)        //HL
+        //                             binary_data[i] = 1;
+        //                     }else{
+        //                         RRC_I_samples[2*i+1] = -1 * RRC_I_samples[2*i+1];
+        //                         if(RRC_I_samples[2*i+1] > 0 && RRC_I_samples[2*i] < 0)        //LH
+        //                             binary_data[i] = 0;
+        //                         else if(RRC_I_samples[2*i+1] < 0 && RRC_I_samples[2*i] > 0)        //HL
+        //                             binary_data[i] = 1;
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //         if(HH_LL_detected == 0){
+        //             bin_50_state = 0;
+        //             next_symbol = RRC_I_samples[50];
+        //         }
+        //     }
+        // }else if(bin_50_state == 1){
+        //     if(bin_50 == 0){
+        //         binary_data.resize(26,0.0);
+
+        //         if(RRC_I_samples[0] > 0 && next_symbol < 0)       //LH
+        //             binary_data[0] = 0;
+
+        //         else if(RRC_I_samples[0] < 0 && next_symbol > 0)       //HL
+        //             binary_data[0] = 1;
+        //         else{
+        //             error_counter = error_counter + 1;
+        //             if(error_counter == e_count_limit){
+        //                 HH_LL_detected = 1;
+        //                 bin_50_state = 1;
+        //                 next_symbol = RRC_I_samples[50];
+        //             }else{
+        //                 if(abs(RRC_I_samples[0]) > abs(next_symbol)){
+        //                     next_symbol = -1 * next_symbol;
+        //                     if(RRC_I_samples[0] > 0 && next_symbol < 0)       //LH
+        //                         binary_data[0] = 0;
+        //                     else if(RRC_I_samples[0] < 0 && next_symbol > 0)       //HL
+        //                         binary_data[0] = 1;
+        //                 }else{
+        //                     RRC_I_samples[0] = -1 * RRC_I_samples[0];
+        //                     if(RRC_I_samples[0] > 0 && next_symbol < 0)        //LH
+        //                         binary_data[0] = 0;
+        //                     else if(RRC_I_samples[0] < 0 && next_symbol > 0)        //HL
+        //                         binary_data[0] = 1;
+        //                 }
+        //             }
+        //         }
+
+        //         if(HH_LL_detected == 0){
+        //             for(auto i = 1; i <binary_data.size(); i++){
+        //                 if(RRC_I_samples[2*i] > 0 && RRC_I_samples[2*i-1] < 0)        //LH
+        //                     binary_data[i] = 0;
+
+        //                 else if(RRC_I_samples[2*i] < 0 && RRC_I_samples[2*i-1] > 0)        //HL
+        //                     binary_data[i] = 1;
+        //                 else{
+        //                     error_counter = error_counter + 1;
+        //                     if(error_counter == e_count_limit){
+        //                         HH_LL_detected = 1;
+        //                         bin_50_state = 1;
+        //                         next_symbol = RRC_I_samples[50];
+        //                         break;
+        //                     }else{
+        //                         if(abs(RRC_I_samples[2*i]) > abs(RRC_I_samples[2*i-1])){
+        //                             RRC_I_samples[2*i-1] = -1 * RRC_I_samples[2*i-1];
+        //                             if(RRC_I_samples[2*i] > 0 && RRC_I_samples[2*i-1] < 0)        //LH
+        //                                 binary_data[i] = 0;
+        //                             else if(RRC_I_samples[2*i] < 0 && RRC_I_samples[2*i-1] > 0)        //HL
+        //                                 binary_data[i] = 1;
+        //                         }else{
+        //                             RRC_I_samples[2*i] = -1 * RRC_I_samples[2*i];
+        //                             if(RRC_I_samples[2*i] > 0 && RRC_I_samples[2*i-1] < 0)        //LH
+        //                                 binary_data[i] = 0;
+        //                             else if(RRC_I_samples[2*i] < 0 && RRC_I_samples[2*i-1] > 0)        //HL
+        //                                 binary_data[i] = 1;
+        //                         }
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //         if(HH_LL_detected == 0){
+        //             bin_50_state = 0;
+        //             next_symbol = RRC_I_samples[50];
+        //         }
+        //     }else if(bin_50 == 1){
+        //         binary_data.resize(25,0.0);
+
+        //         if(RRC_I_samples[0] > 0 && next_symbol < 0)        //LH
+        //             binary_data[0] = 0;
+
+        //         else if(RRC_I_samples[0] < 0 && next_symbol > 0)        //HL
+        //             binary_data[0] = 1;
+        //         else{
+        //             error_counter = error_counter + 1;
+        //             if(error_counter == e_count_limit){
+        //                 HH_LL_detected = 1;
+        //                 bin_50_state = 0;
+        //                 next_symbol = RRC_I_samples[49];
+        //             }else{
+        //                 if(abs(RRC_I_samples[0]) > abs(next_symbol)){
+        //                     next_symbol = -1 * next_symbol;
+        //                     if(RRC_I_samples[0] > 0 && next_symbol < 0)        //LH
+        //                         binary_data[0] = 0;
+        //                     else if(RRC_I_samples[0] < 0 && next_symbol > 0)        //HL
+        //                         binary_data[0] = 1;
+        //                 }else{
+        //                     RRC_I_samples[0] = -1 * RRC_I_samples[0];
+        //                     if(RRC_I_samples[0] > 0 && next_symbol < 0)        //LH
+        //                         binary_data[0] = 0;
+        //                     else if(RRC_I_samples[0] < 0 && next_symbol > 0)        //HL
+        //                         binary_data[0] = 1;
+        //                 }
+        //             }
+        //         }
+        //         if(HH_LL_detected == 0){
+        //             for(auto i = 1; i <binary_data.size(); i++){
+        //                 if(RRC_I_samples[2*i] > 0 && RRC_I_samples[2*i-1] < 0)        //LH
+        //                     binary_data[i] = 0;
+
+        //                 else if(RRC_I_samples[2*i] < 0 && RRC_I_samples[2*i-1] > 0)        //HL
+        //                     binary_data[i] = 1;
+        //                 else{
+        //                     error_counter = error_counter + 1;
+        //                     if(error_counter == e_count_limit){
+        //                         HH_LL_detected = 1;
+        //                         bin_50_state = 0;
+        //                         next_symbol = RRC_I_samples[49];
+        //                         break;
+        //                     }else{
+        //                         if(abs(RRC_I_samples[2*i]) > abs(RRC_I_samples[2*i-1])){
+        //                             RRC_I_samples[2*i-1] = -1 * RRC_I_samples[2*i-1];
+        //                             if(RRC_I_samples[2*i] > 0 && RRC_I_samples[2*i-1] < 0)        //LH
+        //                                 binary_data[i] = 0;
+        //                             else if(RRC_I_samples[2*i] < 0 && RRC_I_samples[2*i-1] > 0)        //HL
+        //                                 binary_data[i] = 1;
+        //                         }else{
+        //                             RRC_I_samples[2*i] = -1 * RRC_I_samples[2*i];
+        //                             if(RRC_I_samples[2*i] > 0 && RRC_I_samples[2*i-1] < 0)        //LH
+        //                                 binary_data[i] = 0;
+        //                             else if(RRC_I_samples[2*i] < 0 && RRC_I_samples[2*i-1] > 0)        //HL
+        //                                 binary_data[i] = 1;
+        //                         }
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //         if(HH_LL_detected == 0){
+        //             bin_50_state = 1;
+        //             next_symbol = RRC_I_samples[49];
+        //         }
+        //     }
+        // }
+
+        //std::cerr << "next_symbol start" <<next_symbol<< " \n";
         if(bin_50_state == 0){
             if(bin_50 == 0){
                 binary_data.resize(25,0.0);
@@ -1436,17 +1696,10 @@ while(true){
                             next_symbol = RRC_I_samples[50];
                             break;
                         }else{
-                            if(abs(RRC_I_samples[2*i+1]) > abs(RRC_I_samples[2*i])){
-                                RRC_I_samples[2*i] = -1 * RRC_I_samples[2*i];
-                                if(RRC_I_samples[2*i+1] > 0 && RRC_I_samples[2*i] < 0)        //LH
+                            if(RRC_I_samples[2*i+1] > RRC_I_samples[2*i]){     //LH
                                     binary_data[i] = 0;
-                                else if(RRC_I_samples[2*i+1] < 0 && RRC_I_samples[2*i] > 0)        //HL
-                                    binary_data[i] = 1;
+                                
                             }else{
-                                RRC_I_samples[2*i+1] = -1 * RRC_I_samples[2*i+1];
-                                if(RRC_I_samples[2*i+1] > 0 && RRC_I_samples[2*i] < 0)        //LH
-                                    binary_data[i] = 0;
-                                else if(RRC_I_samples[2*i+1] < 0 && RRC_I_samples[2*i] > 0)       //HL
                                     binary_data[i] = 1;
                             }
                         }
@@ -1473,17 +1726,10 @@ while(true){
                             next_symbol = RRC_I_samples[49];
                             break;
                         }else{
-                            if(abs(RRC_I_samples[2*i+1]) > abs(RRC_I_samples[2*i])){
-                                RRC_I_samples[2*i] = -1 * RRC_I_samples[2*i];
-                                if(RRC_I_samples[2*i+1] > 0 && RRC_I_samples[2*i] < 0)        //LH
+                            if(RRC_I_samples[2*i+1] > RRC_I_samples[2*i]){        //LH
                                     binary_data[i] = 0;
-                                else if(RRC_I_samples[2*i+1] < 0 && RRC_I_samples[2*i] > 0)        //HL
-                                    binary_data[i] = 1;
-                            }else{
-                                RRC_I_samples[2*i+1] = -1 * RRC_I_samples[2*i+1];
-                                if(RRC_I_samples[2*i+1] > 0 && RRC_I_samples[2*i] < 0)        //LH
-                                    binary_data[i] = 0;
-                                else if(RRC_I_samples[2*i+1] < 0 && RRC_I_samples[2*i] > 0)        //HL
+                                
+                            }else{       //HL
                                     binary_data[i] = 1;
                             }
                         }
@@ -1510,17 +1756,10 @@ while(true){
                         bin_50_state = 1;
                         next_symbol = RRC_I_samples[50];
                     }else{
-                        if(abs(RRC_I_samples[0]) > abs(next_symbol)){
-                            next_symbol = -1 * next_symbol;
-                            if(RRC_I_samples[0] > 0 && next_symbol < 0)       //LH
+                        if(RRC_I_samples[0] > next_symbol){      //LH
                                 binary_data[0] = 0;
-                            else if(RRC_I_samples[0] < 0 && next_symbol > 0)       //HL
-                                binary_data[0] = 1;
-                        }else{
-                            RRC_I_samples[0] = -1 * RRC_I_samples[0];
-                            if(RRC_I_samples[0] > 0 && next_symbol < 0)        //LH
-                                binary_data[0] = 0;
-                            else if(RRC_I_samples[0] < 0 && next_symbol > 0)        //HL
+                            
+                        }else{      //HL
                                 binary_data[0] = 1;
                         }
                     }
@@ -1541,17 +1780,9 @@ while(true){
                                 next_symbol = RRC_I_samples[50];
                                 break;
                             }else{
-                                if(abs(RRC_I_samples[2*i]) > abs(RRC_I_samples[2*i-1])){
-                                    RRC_I_samples[2*i-1] = -1 * RRC_I_samples[2*i-1];
-                                    if(RRC_I_samples[2*i] > 0 && RRC_I_samples[2*i-1] < 0)        //LH
+                                if(RRC_I_samples[2*i] > RRC_I_samples[2*i-1]){        //LH
                                         binary_data[i] = 0;
-                                    else if(RRC_I_samples[2*i] < 0 && RRC_I_samples[2*i-1] > 0)        //HL
-                                        binary_data[i] = 1;
-                                }else{
-                                    RRC_I_samples[2*i] = -1 * RRC_I_samples[2*i];
-                                    if(RRC_I_samples[2*i] > 0 && RRC_I_samples[2*i-1] < 0)        //LH
-                                        binary_data[i] = 0;
-                                    else if(RRC_I_samples[2*i] < 0 && RRC_I_samples[2*i-1] > 0)        //HL
+                                }else{     //HL
                                         binary_data[i] = 1;
                                 }
                             }
@@ -1577,17 +1808,9 @@ while(true){
                         bin_50_state = 0;
                         next_symbol = RRC_I_samples[49];
                     }else{
-                        if(abs(RRC_I_samples[0]) > abs(next_symbol)){
-                            next_symbol = -1 * next_symbol;
-                            if(RRC_I_samples[0] > 0 && next_symbol < 0)        //LH
+                        if(RRC_I_samples[0] > next_symbol){       //LH
                                 binary_data[0] = 0;
-                            else if(RRC_I_samples[0] < 0 && next_symbol > 0)        //HL
-                                binary_data[0] = 1;
-                        }else{
-                            RRC_I_samples[0] = -1 * RRC_I_samples[0];
-                            if(RRC_I_samples[0] > 0 && next_symbol < 0)        //LH
-                                binary_data[0] = 0;
-                            else if(RRC_I_samples[0] < 0 && next_symbol > 0)        //HL
+                        }else{       //HL
                                 binary_data[0] = 1;
                         }
                     }
@@ -1607,17 +1830,9 @@ while(true){
                                 next_symbol = RRC_I_samples[49];
                                 break;
                             }else{
-                                if(abs(RRC_I_samples[2*i]) > abs(RRC_I_samples[2*i-1])){
-                                    RRC_I_samples[2*i-1] = -1 * RRC_I_samples[2*i-1];
-                                    if(RRC_I_samples[2*i] > 0 && RRC_I_samples[2*i-1] < 0)        //LH
+                                if(RRC_I_samples[2*i] > RRC_I_samples[2*i-1]){        //LH
                                         binary_data[i] = 0;
-                                    else if(RRC_I_samples[2*i] < 0 && RRC_I_samples[2*i-1] > 0)        //HL
-                                        binary_data[i] = 1;
-                                }else{
-                                    RRC_I_samples[2*i] = -1 * RRC_I_samples[2*i];
-                                    if(RRC_I_samples[2*i] > 0 && RRC_I_samples[2*i-1] < 0)        //LH
-                                        binary_data[i] = 0;
-                                    else if(RRC_I_samples[2*i] < 0 && RRC_I_samples[2*i-1] > 0)        //HL
+                                }else{       //HL
                                         binary_data[i] = 1;
                                 }
                             }
@@ -1632,32 +1847,32 @@ while(true){
         }
 
         //std::cerr << "HHLL " << ((error_counter == e_count_limit) ? "Detected" : "No!") <<" - Block: " << block_count << " \n";
-        
-        
+        //printRealVectorint(binary_data);
+        //std::cerr << "next_symbol end" <<next_symbol<< " \n";
 
 
 
 
         // /////////////New Thread
-        manchester_binary.resize( binary_data.size(), 0);
-        manchester_binary[0] = ((int)round(binary_data[0]) != manchester_binary_state) ? 1 : 0;
+        // manchester_binary.resize( binary_data.size(), 0);
+        // manchester_binary[0] = (binary_data[0] != manchester_binary_state) ? 1 : 0;
 
-        process_MBA(manchester_binary[0],manchester_binary_processing_array,previous_match, is_nSync, 
-        nSync_Hit_counter, nSync_Flop_counter, allowed_nSync_Flops, 
-        found_array,
-        parityArray, syndrome);
-        // if(found_array.size() > 0)
-        //     printRealVectormdint(found_array);
-        for(auto i = 1 ; i < manchester_binary.size() ; i++){
-            manchester_binary[i] = ((int)round(binary_data[i]) != (int)round(binary_data[i-1])) ? 1 : 0;
-            process_MBA(manchester_binary[i],manchester_binary_processing_array,previous_match, is_nSync, 
-            nSync_Hit_counter, nSync_Flop_counter, allowed_nSync_Flops, 
-            found_array,
-            parityArray, syndrome);
-            // if(found_array.size() > 0)
-            //     printRealVectormdint(found_array);
-        }
-        manchester_binary_state = binary_data[binary_data.size() - 1];
+        // process_MBA(manchester_binary[0],manchester_binary_processing_array,previous_match, is_nSync, 
+        // nSync_Hit_counter, nSync_Flop_counter, allowed_nSync_Flops, 
+        // found_array,
+        // parityArray, syndrome);
+        // // if(found_array.size() > 0)
+        //      //printRealVectorint(manchester_binary_processing_array);
+        // for(auto i = 1 ; i < manchester_binary.size() ; i++){
+        //     manchester_binary[i] = (binary_data[i] != binary_data[i-1]) ? 1 : 0;
+        //     process_MBA(manchester_binary[i],manchester_binary_processing_array,previous_match, is_nSync, 
+        //     nSync_Hit_counter, nSync_Flop_counter, allowed_nSync_Flops, 
+        //     found_array,
+        //     parityArray, syndrome);
+        //     // if(found_array.size() > 0)
+        //          //printRealVectorint(manchester_binary_processing_array);
+        // }
+        // manchester_binary_state = binary_data[binary_data.size() - 1];
         
 
 
@@ -1672,6 +1887,19 @@ while(true){
 
 
         //////////////////Queue/////////////////////////
+
+        std::unique_lock<std::mutex> out_lock(out_mutex);
+        if(out_queue.size() == QUEUE_bLoCks){
+            //std::cerr << "QUEUE Waiting...";
+            out_cvar.wait(out_lock);
+        }
+        out_queue.push(binary_data);
+        
+
+        out_lock.unlock();
+        out_cvar.notify_one();
+
+
         my_lock.unlock();
         my_cvar.notify_one();
 
@@ -1679,6 +1907,121 @@ while(true){
 
 
     }
+}
+
+void RDS_1(
+    std::queue<std::vector<int>> &in_queue,
+    std::mutex &in_mutex,
+    std::condition_variable &in_cvar
+){
+
+    std::vector<int> binary_data;
+
+    std::vector< std::vector<int> > parityArray = { {1,0,0,0,0,0,0,0,0,0}, 
+                        {0,1,0,0,0,0,0,0,0,0}, 
+                        {0,0,1,0,0,0,0,0,0,0}, 
+                        {0,0,0,1,0,0,0,0,0,0}, 
+                        {0,0,0,0,1,0,0,0,0,0}, 
+                        {0,0,0,0,0,1,0,0,0,0}, 
+                        {0,0,0,0,0,0,1,0,0,0}, 
+                        {0,0,0,0,0,0,0,1,0,0}, 
+                        {0,0,0,0,0,0,0,0,1,0}, 
+                        {0,0,0,0,0,0,0,0,0,1}, 
+                        {1,0,1,1,0,1,1,1,0,0}, 
+                        {0,1,0,1,1,0,1,1,1,0}, 
+                        {0,0,1,0,1,1,0,1,1,1}, 
+                        {1,0,1,0,0,0,0,1,1,1}, 
+                        {1,1,1,0,0,1,1,1,1,1}, 
+                        {1,1,0,0,0,1,0,0,1,1}, 
+                        {1,1,0,1,0,1,0,1,0,1}, 
+                        {1,1,0,1,1,1,0,1,1,0}, 
+                        {0,1,1,0,1,1,1,0,1,1}, 
+                        {1,0,0,0,0,0,0,0,0,1}, 
+                        {1,1,1,1,0,1,1,1,0,0}, 
+                        {0,1,1,1,1,0,1,1,1,0}, 
+                        {0,0,1,1,1,1,0,1,1,1}, 
+                        {1,0,1,0,1,0,0,1,1,1}, 
+                        {1,1,1,0,0,0,1,1,1,1}, 
+                        {1,1,0,0,0,1,1,0,1,1} }; 
+
+    std::vector<int> manchester_binary;
+    int manchester_binary_state;
+
+    std::vector<int> manchester_binary_processing_array(26);
+
+    int previous_match = 0; 
+    int is_nSync = 0; 
+    int nSync_Hit_counter = 0; 
+    int nSync_Flop_counter = 0; 
+    int allowed_nSync_Flops = 6; 
+    std::vector<std::vector<int>> found_array;
+    std::vector<int> syndrome(10,0);
+
+
+    while (true)
+    {
+
+        //////////////////Queue/////////////////////////
+        std::unique_lock<std::mutex> in_lock(in_mutex);
+        if(in_queue.empty()){
+            //std::cerr << "RDS Audio Waiting...";
+            in_cvar.wait(in_lock);
+        }
+
+        binary_data = in_queue.front();
+        in_queue.pop();
+        //////////////////Queue/////////////////////////
+
+
+
+
+
+        //////////////////Compute/////////////////////////
+        manchester_binary.resize( binary_data.size(), 0);
+        manchester_binary[0] = (binary_data[0] != manchester_binary_state) ? 1 : 0;
+
+        process_MBA(manchester_binary[0],manchester_binary_processing_array,previous_match, is_nSync, 
+        nSync_Hit_counter, nSync_Flop_counter, allowed_nSync_Flops, 
+        found_array,
+        parityArray, syndrome);
+        // if(found_array.size() > 0)
+             //printRealVectorint(manchester_binary_processing_array);
+        for(auto i = 1 ; i < manchester_binary.size() ; i++){
+            manchester_binary[i] = (binary_data[i] != binary_data[i-1]) ? 1 : 0;
+            process_MBA(manchester_binary[i],manchester_binary_processing_array,previous_match, is_nSync, 
+            nSync_Hit_counter, nSync_Flop_counter, allowed_nSync_Flops, 
+            found_array,
+            parityArray, syndrome);
+            // if(found_array.size() > 0)
+                 //printRealVectorint(manchester_binary_processing_array);
+        }
+        manchester_binary_state = binary_data[binary_data.size() - 1];
+        
+
+        //////////////////Compute/////////////////////////
+
+
+
+
+        //////////////////Queue/////////////////////////
+        in_lock.unlock();
+        in_cvar.notify_one();
+        //////////////////Queue/////////////////////////
+
+
+
+        
+
+
+
+
+
+        
+    }
+    
+
+
+
 }
 
 
