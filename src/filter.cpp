@@ -11,22 +11,6 @@ Ontario, Canada
 #include <math.h>
 #define PI 3.14159265358979323846
 // function to compute the impulse response "h" based on the sinc function
-
-inline double angle_norm(double x)
-{
-    x = fmod(x + PI, 2*PI);
-    if (x < 0)
-        x += 2*PI;
-    return x - PI;
-}
-
-double phase_unwrap(double prev, double now)
-{
-    return prev + angle_norm(now - prev);
-}
-
-
-
 void impulseResponseLPF(double Fs, double Fc, unsigned short int num_taps, std::vector<double> &h, double decim)
 {
 	
@@ -96,6 +80,38 @@ void impulseResponseBPF(double Fs, double Fb,double Fe, unsigned short int num_t
 
 void convolveFIR_N_dec(const int step_size, std::vector<double> &y, const std::vector<double> &x, const std::vector<double> &h, std::vector<double> &state )
 {
+	auto max_size = x.size();
+	if (h.size() > max_size)
+	{
+		max_size = h.size();
+	}
+	long special = 0;
+	for (auto n = 0; n < y.size(); n++)
+	{
+		special = 0;
+		y[n] = 0;
+		for (auto m = 0; m < h.size(); m++)
+		{
+			if ((step_size*n-m) >= 0 && (step_size*n-m) < max_size)
+			{
+				y[n] += x[step_size*n-m] * h[m];
+			}else if((step_size*n-m) < 0 && state.size() > 0){
+				y[n] += state[state.size() - 1 - special] * h[m];
+				special++;
+			}
+			
+
+		}
+	}
+	for(auto ii = 0 ; ii < state.size(); ii++){
+		state[ii] = x[(x.size()) - state.size() + ii];
+	}
+
+	
+}
+
+void convolveFIR_N_dec_RDS(const int step_size, std::vector<double> &y, const std::vector<double> &x, const std::vector<double> &h, std::vector<double> &state )
+{
     y.resize(trunc(x.size()/step_size));
     auto max_size = x.size();
 	if (h.size() > max_size)
@@ -126,114 +142,6 @@ void convolveFIR_N_dec(const int step_size, std::vector<double> &y, const std::v
 
 	
 }
-
-
-void fmDemodArctanBlock(std::vector<double> &fm_demod,std::vector<double> &I, std::vector<double> &Q,std::vector<double> &prev_phase){
-	fm_demod.resize(I.size(), 0.0);
-	double thetadelta = 0, a, b, c, current_phase;
-	for(auto n = 0; n < I.size(); n++){
-		//std::cout << "Bad Samples -> I :" << I[0] << " Q : " << Q[0] << " \n";
-		a = b =c = current_phase = 0;
-		if(n == 0){
-			a = I[n]*(Q[n]-prev_phase[0]);		//prev phase is never being stored
-			b = Q[n]*(I[n]-prev_phase[1]);
-			c = (I[n]*I[n] + Q[n]*Q[n]);
-			thetadelta = (a-b)/c;
-		}
-		else{
-			a = I[n]*(Q[n]-Q[n-1]);
-			b = Q[n]*(I[n]-I[n-1]);
-			c = (I[n]*I[n] + Q[n]*Q[n]);
-
-			thetadelta = (a-b)/c;
-		}
-        //thetadelta = fmod(thetadelta,PI);
-        // int saftey = 0;
-        // while(thetadelta > PI || thetadelta < -PI){
-        //     if(saftey == 3){
-        //         break;
-        //     }
-        //     if(thetadelta > PI){
-        //         thetadelta = thetadelta - 2*PI;
-        //     }
-        //     else if(thetadelta < -PI){
-        //         thetadelta = thetadelta + 2*PI;
-        //     }
-        //     saftey++;
-        // }                                               //Unwrap
-        
-		if(!std::isnan(thetadelta)){
-		fm_demod[n] = thetadelta;
-		}else{
-		fm_demod[n] = (a-b)*2;	
-		}
-	}
-	prev_phase.resize(2);
-	prev_phase[0] = Q[Q.size() - 1];
-	prev_phase[1] = I[I.size() - 1];
-}
-
-void fmDemodArctanBlockSlow(std::vector<double> &fm_demod,std::vector<double> &I, std::vector<double> &Q,std::vector<double> &prev_phase){
-	fm_demod.resize(I.size(), 0.0);
-	double thetadelta = 0, a, b, c, current_phase;
-	for(auto n = 0; n < I.size(); n++){
-		current_phase = atan2(Q[n], I[n]);
-
-        //phase_unwrap(prev_phase[0],current_phase)
-        fm_demod[n] = current_phase - prev_phase[0];
-	}
-	prev_phase.resize(1);
-	prev_phase[0] = current_phase;
-}
-
-
-// void convolve_UPSAMPLE_N_dec_New(int step_size,int upsample_size, std::vector<double> &y, const std::vector<double> &x, const std::vector<double> &h, std::vector<double> &state)
-// {
-//     y.resize(trunc(/*upsample_size**/x.size()/step_size));
-//     auto max_size = x.size();
-// 	if (h.size() > max_size)
-// 	{
-// 		max_size = h.size();
-// 	}
-//     int r0;
-//     int limit;
-//     int u = upsample_size;
-//     int d = step_size;
-//     int test = 0;
-//     int testcnt = 0;
-// 	for (auto n = 0; n < y.size(); n++){
-//         r0 = h.size()%upsample_size;
-//         limit = (n%upsample_size < r0) ? trunc(((double)h.size())/ (double)upsample_size)+1 : trunc(((double)h.size())/ (double)upsample_size);
-//         y[n] = 0;
-//         test = 0;
-//         //std::cerr << "limit " << limit << "\n";
-//         for(auto k = 0 ; k < limit ; k++){
-//             if (((n*d) - ((n*d)%u + u*k)) >= 0 && ((n*d) - ((n*d)%u + u*k)) < max_size){
-//                 y[n] += h[ (n*d)%u + u*k] * x[(n*d) - ((n*d)%u + u*k)];
-//                 test = 1;
-//             }else if((n*d) - ((n*d)%u + u*k) < 0 && state.size() > 0){
-//                 y[n] += h[ (n*d)%u + u*k] * state[state.size() + (n*d) - ((n*d)%u + u*k)];
-//                 test = 1;
-//             }
-//         }
-//         if(test == 1)
-//             testcnt++;
-        
-        
-//     }
-//     //std::cerr << "Testct " << testcnt << "\n";
-//     //std::cerr << "Maxsize " << max_size << "\n";
-    
-
-
-
-
-// 	for(auto ii = 0 ; ii < state.size(); ii++){
-// 		state[ii] = x[(x.size()) - state.size() + ii];
-// 	}
-
-// }
-
 
 void convolve_UPSAMPLE_N_dec_New(int step_size,int upsample_size, std::vector<double> &y, const std::vector<double> &x, const std::vector<double> &h, std::vector<double> &state)
 {
@@ -282,9 +190,55 @@ void convolve_UPSAMPLE_N_dec_New(int step_size,int upsample_size, std::vector<do
 
 }
 
+
+void fmDemodArctanBlock(std::vector<double> &fm_demod,std::vector<double> &I, std::vector<double> &Q,std::vector<double> &prev_phase){
+	fm_demod.resize(I.size(), 0.0);
+	double thetadelta = 0, a, b, c, current_phase;
+	for(auto n = 0; n < I.size(); n++){
+		//std::cout << "Bad Samples -> I :" << I[0] << " Q : " << Q[0] << " \n";
+		a = b =c = current_phase = 0;
+		if(n == 0){
+			a = I[n]*(Q[n]-prev_phase[0]);		//prev phase is never being stored
+			b = Q[n]*(I[n]-prev_phase[1]);
+			c = (I[n]*I[n] + Q[n]*Q[n]);
+			thetadelta = (a-b)/c;
+		}
+		else{
+			a = I[n]*(Q[n]-Q[n-1]);
+			b = Q[n]*(I[n]-I[n-1]);
+			c = (I[n]*I[n] + Q[n]*Q[n]);
+
+			thetadelta = (a-b)/c;
+		}
+        //thetadelta = fmod(thetadelta,PI);
+        // int saftey = 0;
+        // while(thetadelta > PI || thetadelta < -PI){
+        //     if(saftey == 3){
+        //         break;
+        //     }
+        //     if(thetadelta > PI){
+        //         thetadelta = thetadelta - 2*PI;
+        //     }
+        //     else if(thetadelta < -PI){
+        //         thetadelta = thetadelta + 2*PI;
+        //     }
+        //     saftey++;
+        // }                                               //Unwrap
+        
+		if(!std::isnan(thetadelta)){
+		fm_demod[n] = thetadelta;
+		}else{
+		fm_demod[n] = (a-b)*2;	
+		}
+	}
+	prev_phase.resize(2);
+	prev_phase[0] = Q[Q.size() - 1];
+	prev_phase[1] = I[I.size() - 1];
+}
+
+
 void convolve_UPSAMPLE_N_dec(int step_size,int upsample_size, std::vector<double> &y, const std::vector<double> &x, const std::vector<double> &h, std::vector<double> &state)
 {
-    //y.resize(trunc(upsample_size*x.size()/step_size));
 	auto max_size = x.size();
 	if (h.size() > max_size)
 	{
@@ -292,7 +246,6 @@ void convolve_UPSAMPLE_N_dec(int step_size,int upsample_size, std::vector<double
 	}
 	long special = 0;
 	for(auto phase = 0; phase < upsample_size; phase++){
-        //std::cerr << phase <<"\n";
 
 			for (auto n = phase; n < y.size(); n = n + upsample_size)
 			{
@@ -330,7 +283,6 @@ void convolve_UPSAMPLE_N_dec(int step_size,int upsample_size, std::vector<double
 	}
 
 }
-
 
 void impulseResponseRootRaisedCosine(double Fs,int N_taps,std::vector<double> &impulseResponseRRC){
 // duation for each symbol - do NOT be changed for RDS!

@@ -41,25 +41,3 @@ void logVector(const std::string filename, \
 	std::cout << "Generated " << dat_filename << " to be used by gnuplot\n";
 	fd.close();
 }
-
-void logVector2(const std::string filename, \
-	const std::vector<double> &x, \
-	const std::vector<double> &y)
-{
-	// write data in text format to be parsed by gnuplot (change as needed)
-	const std::string dat_filename = "../data/" + filename + ".dat";
-	std::fstream fd;
-	fd.open(dat_filename, std::ios::out);
-	fd << "#\tx_axis\ty_axis\n";
-
-	for (auto i = 0; i < x.size(); i++) {
-		fd << "\t " << x[i] << "\t";
-		// if the number of values on the Y axis is less than on the X tx_axis
-		// then we just do not write anything on the Y axis
-		if (i < y.size())
-			fd << y[i];
-		fd << "\n";
-	}
-	std::cout << "Generated " << dat_filename << " to be used by gnuplot\n";
-	fd.close();
-}

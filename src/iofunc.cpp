@@ -11,32 +11,12 @@ Ontario, Canada
 
 // some basic functions for printing information from vectors
 // or to read from/write to binary files in 32-bit float format
-void printRealVector(const std::vector<double> &x)
+void printRealVector(const std::vector<float> &x)
 {
-	std::cerr << "Printing float vector of size " << x.size() << "\n";
+	std::cout << "Printing float vector of size " << x.size() << "\n";
 	for (auto i = 0; i < x.size(); i++)
-		std::cerr << x[i] << " ";
-	std::cerr << "\n";
-}
-
-void printRealVectorint(const std::vector<int> &x)
-{
-	std::cerr << "Printing float vector of size " << x.size() << "\n";
-	for (auto i = 0; i < x.size(); i++)
-		std::cerr << x[i] << " ";
-	std::cerr << "\n";
-}
-
-void printRealVectormdint(const std::vector<std::vector<int> > &x)
-{
-    std::cerr << "Printing float vector of n rows - n = " << x.size() << "\n";
-    for (auto i = 0; i < x.size(); i++){
-        std::cerr << "Printing float vector row of size " << x[0].size() << "\n";
-        for (auto j = 0; j < x[0].size(); j++){
-            std::cerr << x[i][j] << " ";
-        }
-        std::cerr << "\n";
-    }
+		std::cout << x[i] << " ";
+	std::cout << "\n";
 }
 
 void printComplexVector(const std::vector<std::complex<float>> &X)
