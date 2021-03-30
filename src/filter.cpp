@@ -84,6 +84,23 @@ void convolveFIR_N_dec(const int step_size, std::vector<double> &y, const std::v
 
 }
 
+
+void upsampler(std::vector<double> &x,const int upsample_size){
+	int size = x.size();
+	std::vector<double> temp(size);
+	for(auto i = 0; i < size; i++){
+		temp[i] = x[i];
+	}
+	x.clear();
+	x.resize(0);
+	x.resize(temp.size()*upsample_size);
+	int counter = 0;
+	for(auto i = 0; i < size*upsample_size; i++){
+		if(i%upsample_size == 0){x[i] = temp[counter];counter++;}
+		else{x[i] = 0;}
+	}
+}
+
 void convolve_UPSAMPLE_N_dec(const int step_size, const int upsample_size, std::vector<double> &y, const std::vector<double> &x, const std::vector<double> &h, std::vector<double> &state)
 {
 	auto max_size = x.size();
@@ -100,15 +117,16 @@ void convolve_UPSAMPLE_N_dec(const int step_size, const int upsample_size, std::
 				// std::cout << "phase : " <<  phase << " \n";
 				special = 0;
 				y[n] = 0;
-				for (auto m = 0; m < h.size(); m = m + 1)
+				for (auto m = phase; m < h.size(); m = m + upsample_size)
 				{
-					if (((step_size%upsample_size)*n-m) >= 0 && ((step_size%upsample_size)*n-m) < max_size)
+					if (((step_size)*n-m) >= 0 && ((step_size)*n-m) < max_size)
 						{
-							y[n] += x[(step_size%upsample_size)*n-m] * h[m];
-						}else if(((step_size%upsample_size)*n-m) < 0 && state.size() > 0){
+							y[n] += x[(step_size)*n-m] * h[m];
+						}else if(((step_size)*n-m) < 0 && state.size() > 0){
 							y[n] += state[state.size() - 1 - special] * h[m];
 							special++;
 						}
+
 
 					}
 
@@ -117,10 +135,10 @@ void convolve_UPSAMPLE_N_dec(const int step_size, const int upsample_size, std::
 			}
 
 	}
-
-	// for(auto ii = 0 ; ii < y.size(); ii++){
-	// 	y[ii] =y[ii]*upsample_size;
-	// }
+	//
+	for(auto ii = 0 ; ii < y.size(); ii++){
+		y[ii] =y[ii]*upsample_size;
+	}
 
 //	for(auto i = 0 ; i < y.size(); i++){y[i] = y[i]*upsample_size;}
 

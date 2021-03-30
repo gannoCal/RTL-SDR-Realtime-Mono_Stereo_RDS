@@ -29,7 +29,7 @@ if __name__ == "__main__":
 	float_data = np.fromfile(in_fname, dtype='float64')
 	print(" Read binary data from \"" + in_fname + "\" in float64 format")
 
-#	reshaped_data = np.reshape(float_data, (-1, 2))
+# 	reshaped_data = np.reshape(float_data, (-1, 2))
 # 	list1 = float_data.tolist()
 # 	print(len(list1))
 # 	for i in range(len(list1)):
