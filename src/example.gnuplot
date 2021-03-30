@@ -16,9 +16,9 @@ plot '../data/RRC_I_c2.dat' using 1:2 with points lt 1 lw 2 lc rgb '#000088' not
 # freq domain (Fourier)
 set ylabel 'Spectrum (dB/Hz)'            # set y-axis label
 set xlabel 'Frequency (KHz)'             # set x-axis label
-set yrange [-0.015:0.015]                       # set y plot range
-set xrange [0:1215]                       # set x plot range
-plot '../data/RRC_I2.dat' using 1:2 with lines lt 1 lw 2 lc rgb '#008800' notitle
+set yrange [-180:-120]                       # set y plot range
+set xrange [0:255]                       # set x plot range
+plot '../data/audio_ds_PSD.dat' using 1:2 with lines lt 1 lw 2 lc rgb '#008800' notitle
 
 # freq domain (PSD)
 set ylabel 'Spectrum (dB/Hz)'            # set y-axis label

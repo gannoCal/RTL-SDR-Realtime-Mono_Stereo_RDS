@@ -39,7 +39,7 @@ Ontario, Canada
 
 void upsampleIQSamples(std::vector<double> &,std::vector<double> &);
 
-void floatFEthreadMethod_00(bool &floatMode, 
+void floatFEthreadMethod_00( 
     const int &block_size, 
     std::vector<double> &iq_data,
     int &sample_counter,
@@ -62,7 +62,7 @@ void floatFEthreadMethod_00(bool &floatMode,
 
 );
 
-void floatFEthreadMethod_01(bool &floatMode, 
+void floatFEthreadMethod_01(
     const int &block_size, 
     std::vector<double> &iq_data,
     int &sample_counter,
@@ -82,7 +82,7 @@ void floatFEthreadMethod_01(bool &floatMode,
 
 );
 
-void binFEthreadMethod_0(bool &floatMode, 
+void binFEthreadMethod_0( 
     const int &block_size, 
     std::vector<double> &iq_data,
     int &sample_counter,
@@ -98,7 +98,10 @@ void binFEthreadMethod_0(bool &floatMode,
     std::vector<double> &fm_demod,
     std::queue<std::vector<double>> &my_queue,
     std::mutex &my_mutex,
-    std::condition_variable &my_cvar
+    std::condition_variable &my_cvar,
+    std::queue<std::vector<double>> &RDS_queue,
+    std::mutex &RDS_mutex,
+    std::condition_variable &RDS_cvar
 
 );
 
@@ -163,7 +166,7 @@ void stereoAuDiOtHrEaDmEtHoD_0(
 );
 
 
-void floatFEthreadMethod_1(bool &floatMode, 
+void floatFEthreadMethod_1(
     const int &block_size, 
     std::vector<double> &iq_data,
     int &sample_counter,
@@ -183,7 +186,7 @@ void floatFEthreadMethod_1(bool &floatMode,
 
 );
 
-void binFEthreadMethod_1(bool &floatMode, 
+void binFEthreadMethod_1(
     const int &block_size, 
     std::vector<double> &iq_data,
     int &sample_counter,
@@ -289,8 +292,8 @@ void RDS_1(
 
 int main(int argc,char* argv[])
 {
-    bool floatMode = true;
-    bool stereoMode = true;
+    bool floatMode = false;
+    bool stereoMode = false;
 	int mode = 0;
     if(argc < 2){
         //std::cerr << "Default - Mode 0";
@@ -370,9 +373,9 @@ int main(int argc,char* argv[])
 
         
 
-        //std::cerr << "Mode is : " << mode << " \n";
-        //std::cerr << "Param1 is : " << ModeIn1[0] << ModeIn1[1] << " \n";
-        //std::cerr << "Param2 is : " << ModeIn2[0] << ModeIn2[1] << " \n";
+        std::cerr << "Mode is : " << mode << " \n";
+        std::cerr << "Param1 is : " << ModeIn1[0] << ModeIn1[1] << " \n";
+        std::cerr << "Param2 is : " << ModeIn2[0] << ModeIn2[1] << " \n";
 
     }else{
         //std::cerr << "Error. Please fix your input. " << " \n";
@@ -409,38 +412,55 @@ int main(int argc,char* argv[])
 
     const int rds_exreco_taps = Taps;
 
+    std::vector<double> rf_coeff;
+    std::vector<double> audio_coeff;
+    std::vector<double> st_coeff;
+    std::vector<double> tone_coeff;
+
+
+
+
+    std::vector<double> fm_demod_fe;
+    std::vector<double> fm_demod_fe_rds;
+    std::vector<double> fm_demod_audio;
+
 	if(mode == 1)
 	{
 		rf_Fs = 2.5e6;
 		decimator = 125;
         audio_Fs = 250e3;
         if_Fs = 250e3;
-	}
+
+
+        
+        
+        
+
+
+        
+        }
 	else
 	// Mode 0 assumed to be default if Mode 1 not selected
 	{
 		rf_Fs = 2.4e6;
 		decimator = audio_decim;
-	}
-
-	std::vector<double> rf_coeff;
-	std::vector<double> audio_coeff;
-    std::vector<double> st_coeff;
-    std::vector<double> tone_coeff;
-	std::vector<double> fm_demod_fe;
-    std::vector<double> fm_demod_fe_rds;
-    std::vector<double> fm_demod_audio;
-    
-    
 
 
-	impulseResponseLPF(rf_Fs, rf_Fc, rf_taps, rf_coeff,1);
-	impulseResponseLPF(audio_Fs, audio_Fc, audio_taps, audio_coeff,1);
-    
-    impulseResponseBPF(if_Fs, sband_Fb, sband_Fe, audio_taps, st_coeff,1);
-    impulseResponseBPF(if_Fs, tband_Fb, tband_Fe, audio_taps, tone_coeff,1);
+        
+        
 
-    
+
+   }
+
+	    impulseResponseLPF(rf_Fs, rf_Fc, rf_taps, rf_coeff,1);
+        impulseResponseLPF(audio_Fs, audio_Fc, audio_taps, audio_coeff,1);
+        
+        impulseResponseBPF(if_Fs, sband_Fb, sband_Fe, audio_taps, st_coeff,1);
+        impulseResponseBPF(if_Fs, tband_Fb, tband_Fe, audio_taps, tone_coeff,1);
+	
+        std::vector<double> anti_imag_coeff;
+        impulseResponseLPF(audio_Fs, audio_Fc, audio_taps, audio_coeff,1);
+
 
     std::vector<float> vector_index;
     genIndexVector(vector_index, st_coeff.size());
@@ -535,14 +555,13 @@ int main(int argc,char* argv[])
 
 
 
-// if(mode == 0){
-//     if(floatMode){
-//         if(stereoMode){
-//         /////////////////////////////////////////////////////////Stereo_float_0/////////////////////////////////////////////////////////
+if(mode == 0){
+    if(floatMode){
+        if(stereoMode){
+        /////////////////////////////////////////////////////////Stereo_float_0/////////////////////////////////////////////////////////
         
         std::thread fe = std::thread(
             floatFEthreadMethod_00,
-            std::ref(floatMode), 
             std::cref(block_size), 
             std::ref(iq_data),
             std::ref(sample_counter),
@@ -643,477 +662,512 @@ int main(int argc,char* argv[])
         rds0.join();
         rds1.join();
         audio.join();
-//         /////////////////////////////////////////////////////////Stereo_float_0/////////////////////////////////////////////////////////
-//         }else{
-//         /////////////////////////////////////////////////////////Mono_float_0/////////////////////////////////////////////////////////
+        /////////////////////////////////////////////////////////Stereo_float_0/////////////////////////////////////////////////////////
+        }else{
+        /////////////////////////////////////////////////////////Mono_float_0/////////////////////////////////////////////////////////
         
             
             
             
-//             std::thread fe = std::thread(
-//             floatFEthreadMethod_00,
-//             std::ref(floatMode), 
-//             std::cref(block_size), 
-//             std::ref(iq_data),
-//             std::ref(sample_counter),
-//             std::ref(i_samples_block),
-//             std::ref(q_samples_block),
-//             std::ref(rf_coeff),
-//             std::ref(mode),
-//             std::ref(i_ds),
-//             std::ref(q_ds),
-//             std::ref(state_i_lpf_100k),
-//             std::ref(state_q_lpf_100k),
-//             std::ref(state_phase),
-//             std::ref(fm_demod_fe),
-//             std::ref(my_queue),
-//             std::ref(my_mutex),
-//             std::ref(my_cvar)
-//         );
+            std::thread fe = std::thread(
+            floatFEthreadMethod_00,
+            std::cref(block_size), 
+            std::ref(iq_data),
+            std::ref(sample_counter),
+            std::ref(i_samples_block),
+            std::ref(q_samples_block),
+            std::ref(rf_coeff),
+            std::ref(mode),
+            std::ref(i_ds),
+            std::ref(q_ds),
+            std::ref(state_i_lpf_100k),
+            std::ref(state_q_lpf_100k),
+            std::ref(state_phase),
+            std::ref(fm_demod_fe),
+            std::ref(my_queue),
+            std::ref(my_mutex),
+            std::ref(my_cvar),
+            std::ref(RDS_queue),
+            std::ref(RDS_mutex),
+            std::ref(RDS_cvar)
+        );
 
 
-//             std::thread rds0 = std::thread(    
-//             RDS_0,
-//             std::cref(block_size),
-//             std::ref(if_Fs),
-//             std::cref(rds_exreco_taps),
-//             std::ref(RDS_queue),
-//             std::ref(RDS_mutex),
-//             std::ref(RDS_cvar)
-//         );
+            std::thread rds0 = std::thread(    
+            RDS_0,
+            std::cref(block_size),
+            std::ref(if_Fs),
+            std::cref(rds_exreco_taps),
+            std::ref(RDS_queue),
+            std::ref(RDS_mutex),
+            std::ref(RDS_cvar),
+            std::ref(chester_queue),
+            std::ref(chester_mutex),
+            std::ref(chester_cvar)
+        );
+
+        std::thread rds1 = std::thread(    
+            RDS_1,
+            std::ref(chester_queue),
+            std::ref(chester_mutex),
+            std::ref(chester_cvar)
+        );
 
 
-//         std::thread audio = std::thread(
-//             monoAuDiOtHrEaDmEtHoD_0,
-//             std::ref(decimator),
-//             std::ref(audio_ds),
-//             std::ref(fm_demod_audio),
-//             std::ref(audio_coeff),
-//             std::ref(state_conv),
-//             std::ref(st_ds),
-//             std::ref(tone_ds),
-//             std::ref(st_coeff),
-//             std::ref(tone_coeff),
-//             std::ref(state_st_240k),
-//             std::ref(state_tone_240k),
-//             std::ref(PLLfreq),
-//             std::ref(PLLfs),
-//             std::ref(PLLNCOscale),
-//             std::ref(phaseAdjust),
-//             std::ref(normBandwidth),
-//             std::ref(ncoOut),
-//             std::ref(prevstate),
-//             std::ref(stereo_data_ds),
-//             std::ref(stereo_data),
-//             std::ref(state_stereo_data),
-//             std::ref(stereo_block),
-//             std::ref(audio_data),
-//             std::ref(my_queue),
-//             std::ref(my_mutex),
-//             std::ref(my_cvar)
-//         );
+        std::thread audio = std::thread(
+            monoAuDiOtHrEaDmEtHoD_0,
+            std::ref(decimator),
+            std::ref(audio_ds),
+            std::ref(fm_demod_audio),
+            std::ref(audio_coeff),
+            std::ref(state_conv),
+            std::ref(st_ds),
+            std::ref(tone_ds),
+            std::ref(st_coeff),
+            std::ref(tone_coeff),
+            std::ref(state_st_240k),
+            std::ref(state_tone_240k),
+            std::ref(PLLfreq),
+            std::ref(PLLfs),
+            std::ref(PLLNCOscale),
+            std::ref(phaseAdjust),
+            std::ref(normBandwidth),
+            std::ref(ncoOut),
+            std::ref(prevstate),
+            std::ref(stereo_data_ds),
+            std::ref(stereo_data),
+            std::ref(state_stereo_data),
+            std::ref(stereo_block),
+            std::ref(audio_data),
+            std::ref(my_queue),
+            std::ref(my_mutex),
+            std::ref(my_cvar)
+        );
 
-//         fe.join();
-//         rds0.join();
-//         audio.join();
+        fe.join();
+        rds0.join();
+        rds1.join();
+        audio.join();
 
-//         /////////////////////////////////////////////////////////Mono_float_0/////////////////////////////////////////////////////////
-//         }
-//     }else{
-//         if(stereoMode){
-//         /////////////////////////////////////////////////////////Stereo_bin_0/////////////////////////////////////////////////////////
+        /////////////////////////////////////////////////////////Mono_float_0/////////////////////////////////////////////////////////
+        }
+    }else{
+        if(stereoMode){
+        /////////////////////////////////////////////////////////Stereo_bin_0/////////////////////////////////////////////////////////
         
         
         
-//         std::thread fe = std::thread(
-//             binFEthreadMethod_0,
-//             std::ref(floatMode), 
-//             std::cref(block_size), 
-//             std::ref(iq_data),
-//             std::ref(sample_counter),
-//             std::ref(i_samples_block),
-//             std::ref(q_samples_block),
-//             std::ref(rf_coeff),
-//             std::ref(mode),
-//             std::ref(i_ds),
-//             std::ref(q_ds),
-//             std::ref(state_i_lpf_100k),
-//             std::ref(state_q_lpf_100k),
-//             std::ref(state_phase),
-//             std::ref(fm_demod_fe),
-//             std::ref(my_queue),
-//             std::ref(my_mutex),
-//             std::ref(my_cvar)
-//         );
+        std::thread fe = std::thread(
+            binFEthreadMethod_0, 
+            std::cref(block_size), 
+            std::ref(iq_data),
+            std::ref(sample_counter),
+            std::ref(i_samples_block),
+            std::ref(q_samples_block),
+            std::ref(rf_coeff),
+            std::ref(mode),
+            std::ref(i_ds),
+            std::ref(q_ds),
+            std::ref(state_i_lpf_100k),
+            std::ref(state_q_lpf_100k),
+            std::ref(state_phase),
+            std::ref(fm_demod_fe),
+            std::ref(my_queue),
+            std::ref(my_mutex),
+            std::ref(my_cvar),
+            std::ref(RDS_queue),
+            std::ref(RDS_mutex),
+            std::ref(RDS_cvar)
+        );
 
 
-//         std::thread rds0 = std::thread(    
-//             RDS_0,
-//             std::cref(block_size),
-//             std::ref(if_Fs),
-//             std::cref(rds_exreco_taps),
-//             std::ref(my_queue),
-//             std::ref(my_mutex),
-//             std::ref(my_cvar)
-//         );
+        std::thread rds0 = std::thread(    
+            RDS_0,
+            std::cref(block_size),
+            std::ref(if_Fs),
+            std::cref(rds_exreco_taps),
+            std::ref(my_queue),
+            std::ref(my_mutex),
+            std::ref(my_cvar),
+            std::ref(chester_queue),
+            std::ref(chester_mutex),
+            std::ref(chester_cvar)
+        );
+
+        std::thread rds1 = std::thread(    
+            RDS_1,
+            std::ref(chester_queue),
+            std::ref(chester_mutex),
+            std::ref(chester_cvar)
+        );
 
 
-//         std::thread audio = std::thread(
-//             stereoAuDiOtHrEaDmEtHoD_0,
-//             std::ref(decimator),
-//             std::ref(audio_ds),
-//             std::ref(fm_demod_audio),
-//             std::ref(audio_coeff),
-//             std::ref(state_conv),
-//             std::ref(st_ds),
-//             std::ref(tone_ds),
-//             std::ref(st_coeff),
-//             std::ref(tone_coeff),
-//             std::ref(state_st_240k),
-//             std::ref(state_tone_240k),
-//             std::ref(PLLfreq),
-//             std::ref(PLLfs),
-//             std::ref(PLLNCOscale),
-//             std::ref(phaseAdjust),
-//             std::ref(normBandwidth),
-//             std::ref(ncoOut),
-//             std::ref(prevstate),
-//             std::ref(stereo_data_ds),
-//             std::ref(stereo_data),
-//             std::ref(state_stereo_data),
-//             std::ref(stereo_block),
-//             std::ref(audio_data),
-//             std::ref(my_queue),
-//             std::ref(my_mutex),
-//             std::ref(my_cvar)
-//         );
+        std::thread audio = std::thread(
+            stereoAuDiOtHrEaDmEtHoD_0,
+            std::ref(decimator),
+            std::ref(audio_ds),
+            std::ref(fm_demod_audio),
+            std::ref(audio_coeff),
+            std::ref(state_conv),
+            std::ref(st_ds),
+            std::ref(tone_ds),
+            std::ref(st_coeff),
+            std::ref(tone_coeff),
+            std::ref(state_st_240k),
+            std::ref(state_tone_240k),
+            std::ref(PLLfreq),
+            std::ref(PLLfs),
+            std::ref(PLLNCOscale),
+            std::ref(phaseAdjust),
+            std::ref(normBandwidth),
+            std::ref(ncoOut),
+            std::ref(prevstate),
+            std::ref(stereo_data_ds),
+            std::ref(stereo_data),
+            std::ref(state_stereo_data),
+            std::ref(stereo_block),
+            std::ref(audio_data),
+            std::ref(my_queue),
+            std::ref(my_mutex),
+            std::ref(my_cvar)
+        );
 
-//         fe.join();
-//         rds0.join();
-//         audio.join();
-//         /////////////////////////////////////////////////////////Stereo_bin_0/////////////////////////////////////////////////////////
-//         }else{
-//         /////////////////////////////////////////////////////////Mono_bin_0/////////////////////////////////////////////////////////
+        fe.join();
+        rds0.join();
+        rds1.join();
+        audio.join();
+        /////////////////////////////////////////////////////////Stereo_bin_0/////////////////////////////////////////////////////////
+        }else{
+        /////////////////////////////////////////////////////////Mono_bin_0/////////////////////////////////////////////////////////
            
             
             
-//             std::thread fe = std::thread(
-//             binFEthreadMethod_0,
-//             std::ref(floatMode), 
-//             std::cref(block_size), 
-//             std::ref(iq_data),
-//             std::ref(sample_counter),
-//             std::ref(i_samples_block),
-//             std::ref(q_samples_block),
-//             std::ref(rf_coeff),
-//             std::ref(mode),
-//             std::ref(i_ds),
-//             std::ref(q_ds),
-//             std::ref(state_i_lpf_100k),
-//             std::ref(state_q_lpf_100k),
-//             std::ref(state_phase),
-//             std::ref(fm_demod_fe),
-//             std::ref(my_queue),
-//             std::ref(my_mutex),
-//             std::ref(my_cvar)
-//         );
+            std::thread fe = std::thread(
+            binFEthreadMethod_0,
+            std::cref(block_size), 
+            std::ref(iq_data),
+            std::ref(sample_counter),
+            std::ref(i_samples_block),
+            std::ref(q_samples_block),
+            std::ref(rf_coeff),
+            std::ref(mode),
+            std::ref(i_ds),
+            std::ref(q_ds),
+            std::ref(state_i_lpf_100k),
+            std::ref(state_q_lpf_100k),
+            std::ref(state_phase),
+            std::ref(fm_demod_fe),
+            std::ref(my_queue),
+            std::ref(my_mutex),
+            std::ref(my_cvar),
+            std::ref(RDS_queue),
+            std::ref(RDS_mutex),
+            std::ref(RDS_cvar)
+        );
 
 
-//         std::thread rds0 = std::thread(    
-//             RDS_0,
-//             std::cref(block_size),
-//             std::ref(if_Fs),
-//             std::cref(rds_exreco_taps),
-//             std::ref(my_queue),
-//             std::ref(my_mutex),
-//             std::ref(my_cvar)
-//         ); 
+            std::thread rds0 = std::thread(    
+            RDS_0,
+            std::cref(block_size),
+            std::ref(if_Fs),
+            std::cref(rds_exreco_taps),
+            std::ref(RDS_queue),
+            std::ref(RDS_mutex),
+            std::ref(RDS_cvar),
+            std::ref(chester_queue),
+            std::ref(chester_mutex),
+            std::ref(chester_cvar)
+        );
+
+        std::thread rds1 = std::thread(    
+            RDS_1,
+            std::ref(chester_queue),
+            std::ref(chester_mutex),
+            std::ref(chester_cvar)
+        );
 
 
-//         std::thread audio = std::thread(
-//             monoAuDiOtHrEaDmEtHoD_0,
-//             std::ref(decimator),
-//             std::ref(audio_ds),
-//             std::ref(fm_demod_audio),
-//             std::ref(audio_coeff),
-//             std::ref(state_conv),
-//             std::ref(st_ds),
-//             std::ref(tone_ds),
-//             std::ref(st_coeff),
-//             std::ref(tone_coeff),
-//             std::ref(state_st_240k),
-//             std::ref(state_tone_240k),
-//             std::ref(PLLfreq),
-//             std::ref(PLLfs),
-//             std::ref(PLLNCOscale),
-//             std::ref(phaseAdjust),
-//             std::ref(normBandwidth),
-//             std::ref(ncoOut),
-//             std::ref(prevstate),
-//             std::ref(stereo_data_ds),
-//             std::ref(stereo_data),
-//             std::ref(state_stereo_data),
-//             std::ref(stereo_block),
-//             std::ref(audio_data),
-//             std::ref(my_queue),
-//             std::ref(my_mutex),
-//             std::ref(my_cvar)
-//         );
+        std::thread audio = std::thread(
+            monoAuDiOtHrEaDmEtHoD_0,
+            std::ref(decimator),
+            std::ref(audio_ds),
+            std::ref(fm_demod_audio),
+            std::ref(audio_coeff),
+            std::ref(state_conv),
+            std::ref(st_ds),
+            std::ref(tone_ds),
+            std::ref(st_coeff),
+            std::ref(tone_coeff),
+            std::ref(state_st_240k),
+            std::ref(state_tone_240k),
+            std::ref(PLLfreq),
+            std::ref(PLLfs),
+            std::ref(PLLNCOscale),
+            std::ref(phaseAdjust),
+            std::ref(normBandwidth),
+            std::ref(ncoOut),
+            std::ref(prevstate),
+            std::ref(stereo_data_ds),
+            std::ref(stereo_data),
+            std::ref(state_stereo_data),
+            std::ref(stereo_block),
+            std::ref(audio_data),
+            std::ref(my_queue),
+            std::ref(my_mutex),
+            std::ref(my_cvar)
+        );
 
-//         fe.join();
-//         rds0.join();
-//         audio.join();
+        fe.join();
+        rds0.join();
+        rds1.join();
+        audio.join();
 
-//         /////////////////////////////////////////////////////////Mono_bin_0/////////////////////////////////////////////////////////
-//         }
-
-
-//     }
-// }else{
-// if(floatMode){
-//         if(stereoMode){
-//         /////////////////////////////////////////////////////////Stereo_float_1/////////////////////////////////////////////////////////
-//         std::thread fe = std::thread(
-//             floatFEthreadMethod_1,
-//             std::ref(floatMode), 
-//             std::cref(block_size), 
-//             std::ref(iq_data),
-//             std::ref(sample_counter),
-//             std::ref(i_samples_block),
-//             std::ref(q_samples_block),
-//             std::ref(rf_coeff),
-//             std::ref(mode),
-//             std::ref(i_ds),
-//             std::ref(q_ds),
-//             std::ref(state_i_lpf_100k),
-//             std::ref(state_q_lpf_100k),
-//             std::ref(state_phase),
-//             std::ref(fm_demod_fe),
-//             std::ref(my_queue),
-//             std::ref(my_mutex),
-//             std::ref(my_cvar)
-//         );
+        /////////////////////////////////////////////////////////Mono_bin_0/////////////////////////////////////////////////////////
+        }
 
 
-//         std::thread audio = std::thread(
-//             stereoAuDiOtHrEaDmEtHoD_1,
-//             std::ref(decimator),
-//             std::ref(audio_ds),
-//             std::ref(fm_demod_audio),
-//             std::ref(audio_coeff),
-//             std::ref(state_conv),
-//             std::ref(st_ds),
-//             std::ref(tone_ds),
-//             std::ref(st_coeff),
-//             std::ref(tone_coeff),
-//             std::ref(state_st_240k),
-//             std::ref(state_tone_240k),
-//             std::ref(PLLfreq),
-//             std::ref(PLLfs),
-//             std::ref(PLLNCOscale),
-//             std::ref(phaseAdjust),
-//             std::ref(normBandwidth),
-//             std::ref(ncoOut),
-//             std::ref(prevstate),
-//             std::ref(stereo_data_ds),
-//             std::ref(stereo_data),
-//             std::ref(state_stereo_data),
-//             std::ref(stereo_block),
-//             std::ref(audio_data),
-//             std::ref(my_queue),
-//             std::ref(my_mutex),
-//             std::ref(my_cvar)
-//         );
-
-//         fe.join();
-//         audio.join();
-//         /////////////////////////////////////////////////////////Stereo_float_1/////////////////////////////////////////////////////////
-//         }else{
-//         /////////////////////////////////////////////////////////Mono_float_1/////////////////////////////////////////////////////////
-//             std::thread fe = std::thread(
-//             floatFEthreadMethod_1,
-//             std::ref(floatMode), 
-//             std::cref(block_size), 
-//             std::ref(iq_data),
-//             std::ref(sample_counter),
-//             std::ref(i_samples_block),
-//             std::ref(q_samples_block),
-//             std::ref(rf_coeff),
-//             std::ref(mode),
-//             std::ref(i_ds),
-//             std::ref(q_ds),
-//             std::ref(state_i_lpf_100k),
-//             std::ref(state_q_lpf_100k),
-//             std::ref(state_phase),
-//             std::ref(fm_demod_fe),
-//             std::ref(my_queue),
-//             std::ref(my_mutex),
-//             std::ref(my_cvar)
-//         );
+    }
+}else{
+if(floatMode){
+        if(stereoMode){
+        /////////////////////////////////////////////////////////Stereo_float_1/////////////////////////////////////////////////////////
+        std::thread fe = std::thread(
+            floatFEthreadMethod_1,
+            std::cref(block_size), 
+            std::ref(iq_data),
+            std::ref(sample_counter),
+            std::ref(i_samples_block),
+            std::ref(q_samples_block),
+            std::ref(rf_coeff),
+            std::ref(mode),
+            std::ref(i_ds),
+            std::ref(q_ds),
+            std::ref(state_i_lpf_100k),
+            std::ref(state_q_lpf_100k),
+            std::ref(state_phase),
+            std::ref(fm_demod_fe),
+            std::ref(my_queue),
+            std::ref(my_mutex),
+            std::ref(my_cvar)
+        );
 
 
-//         std::thread audio = std::thread(
-//             monoAuDiOtHrEaDmEtHoD_1,
-//             std::ref(decimator),
-//             std::ref(audio_ds),
-//             std::ref(fm_demod_audio),
-//             std::ref(audio_coeff),
-//             std::ref(state_conv),
-//             std::ref(st_ds),
-//             std::ref(tone_ds),
-//             std::ref(st_coeff),
-//             std::ref(tone_coeff),
-//             std::ref(state_st_240k),
-//             std::ref(state_tone_240k),
-//             std::ref(PLLfreq),
-//             std::ref(PLLfs),
-//             std::ref(PLLNCOscale),
-//             std::ref(phaseAdjust),
-//             std::ref(normBandwidth),
-//             std::ref(ncoOut),
-//             std::ref(prevstate),
-//             std::ref(stereo_data_ds),
-//             std::ref(stereo_data),
-//             std::ref(state_stereo_data),
-//             std::ref(stereo_block),
-//             std::ref(audio_data),
-//             std::ref(my_queue),
-//             std::ref(my_mutex),
-//             std::ref(my_cvar)
-//         );
+        std::thread audio = std::thread(
+            stereoAuDiOtHrEaDmEtHoD_1,
+            std::ref(decimator),
+            std::ref(audio_ds),
+            std::ref(fm_demod_audio),
+            std::ref(audio_coeff),
+            std::ref(state_conv),
+            std::ref(st_ds),
+            std::ref(tone_ds),
+            std::ref(st_coeff),
+            std::ref(tone_coeff),
+            std::ref(state_st_240k),
+            std::ref(state_tone_240k),
+            std::ref(PLLfreq),
+            std::ref(PLLfs),
+            std::ref(PLLNCOscale),
+            std::ref(phaseAdjust),
+            std::ref(normBandwidth),
+            std::ref(ncoOut),
+            std::ref(prevstate),
+            std::ref(stereo_data_ds),
+            std::ref(stereo_data),
+            std::ref(state_stereo_data),
+            std::ref(stereo_block),
+            std::ref(audio_data),
+            std::ref(my_queue),
+            std::ref(my_mutex),
+            std::ref(my_cvar)
+        );
 
-//         fe.join();
-//         audio.join();
-
-//         /////////////////////////////////////////////////////////Mono_float_1/////////////////////////////////////////////////////////
-//         }
-//     }else{
-//         if(stereoMode){
-//         /////////////////////////////////////////////////////////Stereo_bin_1/////////////////////////////////////////////////////////
-//         std::thread fe = std::thread(
-//             binFEthreadMethod_1,
-//             std::ref(floatMode), 
-//             std::cref(block_size), 
-//             std::ref(iq_data),
-//             std::ref(sample_counter),
-//             std::ref(i_samples_block),
-//             std::ref(q_samples_block),
-//             std::ref(rf_coeff),
-//             std::ref(mode),
-//             std::ref(i_ds),
-//             std::ref(q_ds),
-//             std::ref(state_i_lpf_100k),
-//             std::ref(state_q_lpf_100k),
-//             std::ref(state_phase),
-//             std::ref(fm_demod_fe),
-//             std::ref(my_queue),
-//             std::ref(my_mutex),
-//             std::ref(my_cvar)
-//         );
+        fe.join();
+        audio.join();
+        /////////////////////////////////////////////////////////Stereo_float_1/////////////////////////////////////////////////////////
+        }else{
+        /////////////////////////////////////////////////////////Mono_float_1/////////////////////////////////////////////////////////
+            std::thread fe = std::thread(
+            floatFEthreadMethod_1,
+            std::cref(block_size), 
+            std::ref(iq_data),
+            std::ref(sample_counter),
+            std::ref(i_samples_block),
+            std::ref(q_samples_block),
+            std::ref(rf_coeff),
+            std::ref(mode),
+            std::ref(i_ds),
+            std::ref(q_ds),
+            std::ref(state_i_lpf_100k),
+            std::ref(state_q_lpf_100k),
+            std::ref(state_phase),
+            std::ref(fm_demod_fe),
+            std::ref(my_queue),
+            std::ref(my_mutex),
+            std::ref(my_cvar)
+        );
 
 
-//         std::thread audio = std::thread(
-//             stereoAuDiOtHrEaDmEtHoD_1,
-//             std::ref(decimator),
-//             std::ref(audio_ds),
-//             std::ref(fm_demod_audio),
-//             std::ref(audio_coeff),
-//             std::ref(state_conv),
-//             std::ref(st_ds),
-//             std::ref(tone_ds),
-//             std::ref(st_coeff),
-//             std::ref(tone_coeff),
-//             std::ref(state_st_240k),
-//             std::ref(state_tone_240k),
-//             std::ref(PLLfreq),
-//             std::ref(PLLfs),
-//             std::ref(PLLNCOscale),
-//             std::ref(phaseAdjust),
-//             std::ref(normBandwidth),
-//             std::ref(ncoOut),
-//             std::ref(prevstate),
-//             std::ref(stereo_data_ds),
-//             std::ref(stereo_data),
-//             std::ref(state_stereo_data),
-//             std::ref(stereo_block),
-//             std::ref(audio_data),
-//             std::ref(my_queue),
-//             std::ref(my_mutex),
-//             std::ref(my_cvar)
-//         );
+        std::thread audio = std::thread(
+            monoAuDiOtHrEaDmEtHoD_1,
+            std::ref(decimator),
+            std::ref(audio_ds),
+            std::ref(fm_demod_audio),
+            std::ref(audio_coeff),
+            std::ref(state_conv),
+            std::ref(st_ds),
+            std::ref(tone_ds),
+            std::ref(st_coeff),
+            std::ref(tone_coeff),
+            std::ref(state_st_240k),
+            std::ref(state_tone_240k),
+            std::ref(PLLfreq),
+            std::ref(PLLfs),
+            std::ref(PLLNCOscale),
+            std::ref(phaseAdjust),
+            std::ref(normBandwidth),
+            std::ref(ncoOut),
+            std::ref(prevstate),
+            std::ref(stereo_data_ds),
+            std::ref(stereo_data),
+            std::ref(state_stereo_data),
+            std::ref(stereo_block),
+            std::ref(audio_data),
+            std::ref(my_queue),
+            std::ref(my_mutex),
+            std::ref(my_cvar)
+        );
 
-//         fe.join();
-//         audio.join();
-//         /////////////////////////////////////////////////////////Stereo_bin_1/////////////////////////////////////////////////////////
-//         }else{
-//         /////////////////////////////////////////////////////////Mono_bin_1/////////////////////////////////////////////////////////
-//             std::thread fe = std::thread(
-//             binFEthreadMethod_1,
-//             std::ref(floatMode), 
-//             std::cref(block_size), 
-//             std::ref(iq_data),
-//             std::ref(sample_counter),
-//             std::ref(i_samples_block),
-//             std::ref(q_samples_block),
-//             std::ref(rf_coeff),
-//             std::ref(mode),
-//             std::ref(i_ds),
-//             std::ref(q_ds),
-//             std::ref(state_i_lpf_100k),
-//             std::ref(state_q_lpf_100k),
-//             std::ref(state_phase),
-//             std::ref(fm_demod_fe),
-//             std::ref(my_queue),
-//             std::ref(my_mutex),
-//             std::ref(my_cvar)
-//         );
+        fe.join();
+        audio.join();
 
-
-//         std::thread audio = std::thread(
-//             monoAuDiOtHrEaDmEtHoD_1,
-//             std::ref(decimator),
-//             std::ref(audio_ds),
-//             std::ref(fm_demod_audio),
-//             std::ref(audio_coeff),
-//             std::ref(state_conv),
-//             std::ref(st_ds),
-//             std::ref(tone_ds),
-//             std::ref(st_coeff),
-//             std::ref(tone_coeff),
-//             std::ref(state_st_240k),
-//             std::ref(state_tone_240k),
-//             std::ref(PLLfreq),
-//             std::ref(PLLfs),
-//             std::ref(PLLNCOscale),
-//             std::ref(phaseAdjust),
-//             std::ref(normBandwidth),
-//             std::ref(ncoOut),
-//             std::ref(prevstate),
-//             std::ref(stereo_data_ds),
-//             std::ref(stereo_data),
-//             std::ref(state_stereo_data),
-//             std::ref(stereo_block),
-//             std::ref(audio_data),
-//             std::ref(my_queue),
-//             std::ref(my_mutex),
-//             std::ref(my_cvar)
-//         );
-
-//         fe.join();
-//         audio.join();
-
-//         /////////////////////////////////////////////////////////Mono_bin_1/////////////////////////////////////////////////////////
-//         }
+        /////////////////////////////////////////////////////////Mono_float_1/////////////////////////////////////////////////////////
+        }
+    }else{
+        if(stereoMode){
+        /////////////////////////////////////////////////////////Stereo_bin_1/////////////////////////////////////////////////////////
+        std::thread fe = std::thread(
+            binFEthreadMethod_1,
+            std::cref(block_size), 
+            std::ref(iq_data),
+            std::ref(sample_counter),
+            std::ref(i_samples_block),
+            std::ref(q_samples_block),
+            std::ref(rf_coeff),
+            std::ref(mode),
+            std::ref(i_ds),
+            std::ref(q_ds),
+            std::ref(state_i_lpf_100k),
+            std::ref(state_q_lpf_100k),
+            std::ref(state_phase),
+            std::ref(fm_demod_fe),
+            std::ref(my_queue),
+            std::ref(my_mutex),
+            std::ref(my_cvar)
+        );
 
 
-//     }
+        std::thread audio = std::thread(
+            stereoAuDiOtHrEaDmEtHoD_1,
+            std::ref(decimator),
+            std::ref(audio_ds),
+            std::ref(fm_demod_audio),
+            std::ref(audio_coeff),
+            std::ref(state_conv),
+            std::ref(st_ds),
+            std::ref(tone_ds),
+            std::ref(st_coeff),
+            std::ref(tone_coeff),
+            std::ref(state_st_240k),
+            std::ref(state_tone_240k),
+            std::ref(PLLfreq),
+            std::ref(PLLfs),
+            std::ref(PLLNCOscale),
+            std::ref(phaseAdjust),
+            std::ref(normBandwidth),
+            std::ref(ncoOut),
+            std::ref(prevstate),
+            std::ref(stereo_data_ds),
+            std::ref(stereo_data),
+            std::ref(state_stereo_data),
+            std::ref(stereo_block),
+            std::ref(audio_data),
+            std::ref(my_queue),
+            std::ref(my_mutex),
+            std::ref(my_cvar)
+        );
+
+        fe.join();
+        audio.join();
+        /////////////////////////////////////////////////////////Stereo_bin_1/////////////////////////////////////////////////////////
+        }else{
+        /////////////////////////////////////////////////////////Mono_bin_1/////////////////////////////////////////////////////////
+            std::thread fe = std::thread(
+            binFEthreadMethod_1, 
+            std::cref(block_size), 
+            std::ref(iq_data),
+            std::ref(sample_counter),
+            std::ref(i_samples_block),
+            std::ref(q_samples_block),
+            std::ref(rf_coeff),
+            std::ref(mode),
+            std::ref(i_ds),
+            std::ref(q_ds),
+            std::ref(state_i_lpf_100k),
+            std::ref(state_q_lpf_100k),
+            std::ref(state_phase),
+            std::ref(fm_demod_fe),
+            std::ref(my_queue),
+            std::ref(my_mutex),
+            std::ref(my_cvar)
+        );
+
+
+        std::thread audio = std::thread(
+            monoAuDiOtHrEaDmEtHoD_1,
+            std::ref(decimator),
+            std::ref(audio_ds),
+            std::ref(fm_demod_audio),
+            std::ref(audio_coeff),
+            std::ref(state_conv),
+            std::ref(st_ds),
+            std::ref(tone_ds),
+            std::ref(st_coeff),
+            std::ref(tone_coeff),
+            std::ref(state_st_240k),
+            std::ref(state_tone_240k),
+            std::ref(PLLfreq),
+            std::ref(PLLfs),
+            std::ref(PLLNCOscale),
+            std::ref(phaseAdjust),
+            std::ref(normBandwidth),
+            std::ref(ncoOut),
+            std::ref(prevstate),
+            std::ref(stereo_data_ds),
+            std::ref(stereo_data),
+            std::ref(state_stereo_data),
+            std::ref(stereo_block),
+            std::ref(audio_data),
+            std::ref(my_queue),
+            std::ref(my_mutex),
+            std::ref(my_cvar)
+        );
+
+        fe.join();
+        audio.join();
+
+        /////////////////////////////////////////////////////////Mono_bin_1/////////////////////////////////////////////////////////
+        }
+
+
+    }
 
 
 
 
 
 
-// }
+}
 
         
 		
@@ -1188,8 +1242,8 @@ void RDS_0(
     // double I_adj = PI/6 - PI/2 - PI/18 - 27*PI/180;
     // double Q_adj = -PI/2 + PI/6 - PI/2 - PI/18 - 27*PI/180;
 
-    double I_adj = PI/6 - PI/2 - PI/18;
-    double Q_adj = -PI/2 + PI/6 - PI/2;
+    double I_adj = PI/6 - PI/2 - PI/18 - 6*PI/180;
+    double Q_adj = -PI/2 + PI/6 - PI/2 - 6*PI/180;
     
 
     std::vector<double> prevstate(6,0);
@@ -1237,7 +1291,7 @@ void RDS_0(
 
     std::vector<double> rds_3k_coeff;
 
-    impulseResponseLPF(240e3*19, 3e3, rds_exreco_taps, rds_3k_coeff,1);
+    impulseResponseLPF(240e3, 3e3, rds_exreco_taps, rds_3k_coeff,1);
 
     std::vector<double> rrc_coeff;
     impulseResponseRootRaisedCosine(57e3,rds_exreco_taps,rrc_coeff);
@@ -1363,22 +1417,29 @@ while(true){
         fmPll_RDS(reco_filt,PLLfreq,PLLfs,
         PLLNCOscale,phaseAdjust,normBandwidth,ncoOut_Q,prevstate);
         
-        RDS_Q.resize(extr_filt.size()*19);
-        RDS_I.resize(extr_filt.size()*19);
+        // RDS_Q.resize(ncoOut_I.size()*19);
+        // RDS_I.resize(ncoOut_I.size()*19);
+        // for(auto i = 0 ; i< extr_filt.size() ; i++){
+        //     RDS_Q[i*19] = ncoOut_I[i] * extr_filt[i] * 2;
+        //     RDS_I[i*19] = ncoOut_Q[i] * extr_filt[i] * 2;
+        // }
+
+        RDS_Q.resize(ncoOut_I.size());
+        RDS_I.resize(ncoOut_I.size());
         for(auto i = 0 ; i< extr_filt.size() ; i++){
-            RDS_Q[i*19] = ncoOut_I[i] * extr_filt[i] * 2;
-            RDS_I[i*19] = ncoOut_Q[i] * extr_filt[i] * 2;
+            RDS_Q[i] = ncoOut_I[i] * extr_filt[i] * 2;
+            RDS_I[i] = ncoOut_Q[i] * extr_filt[i] * 2;
         }
 
 
         //////I and Q swapped ^^^^^^^
 
         // convolve_UPSAMPLE_N_dec(decimator, 24, stereo_data_ds, stereo_data, audio_coeff,state_stereo_data);
-        //convolve_UPSAMPLE_N_dec(80, 19, RDS_I_filt, RDS_I, rds_3k_coeff,state_RDS_I);
-        
+        convolve_UPSAMPLE_N_dec_New(80, 19, RDS_I_filt, RDS_I, rds_3k_coeff,state_RDS_I);
+        //printRealVector(RDS_I_filt);
 
-        convolveFIR_N_dec(80,RDS_I_filt,RDS_I,rds_3k_coeff,state_RDS_I);
-        convolveFIR_N_dec(80,RDS_Q_filt,RDS_Q,rds_3k_coeff,state_RDS_Q);
+        //convolveFIR_N_dec(80,RDS_I_filt,RDS_I,rds_3k_coeff,state_RDS_I);
+        //convolveFIR_N_dec(80,RDS_Q_filt,RDS_Q,rds_3k_coeff,state_RDS_Q);
 
         // RDS_I_filt_ds.resize(trunc(RDS_I.size()/80));
         // RDS_Q_filt_ds.resize(trunc(RDS_I.size()/80));
@@ -1391,7 +1452,7 @@ while(true){
 
         convolveFIR_N_dec(1,RRC_I,RDS_I_filt,rrc_coeff,state_RRC_I);
 
-        //convolve_UPSAMPLE_N_dec(80, 19, RDS_Q_filt, RDS_Q, rds_3k_coeff,state_RDS_Q);
+        convolve_UPSAMPLE_N_dec_New(80, 19, RDS_Q_filt, RDS_Q, rds_3k_coeff,state_RDS_Q);
         
         convolveFIR_N_dec(1,RRC_Q,RDS_Q_filt,rrc_coeff,state_RRC_Q);
         
@@ -1422,13 +1483,20 @@ while(true){
             t_shift_state = 0;
         }
 
-        //t_shift_state = 14;    
+        //t_shift_state = 14;
+        //RRC_I.insert(RRC_I.end(),0.0);
+        //RRC_Q.insert(RRC_I.end(),0.0);
+        RRC_I.resize(RRC_I.size()+1,0.0);
+        RRC_Q.resize(RRC_I.size()+1,0.0);
         ///////Sampler
         bin_50 = 0;
         saved_i = 0;
         for(auto i = 0 ; i < RRC_I_samples.size() ; i++){
             if(shift_state+sample_spacing*i + t_shift_state > RRC_I.size()-1){
-                //saved_i++;
+                //std::cerr << "Saved State interior: " <<shift_state <<" \n";
+                //std::cerr << "Stuff1: " <<(shift_state+sample_spacing*i + t_shift_state) <<" \n";
+                //std::cerr << "Stuff2: " <<(RRC_I.size()-1) <<" \n";
+                saved_i++;
                 bin_50 = 1;
                 break;
             }else{
@@ -1437,101 +1505,105 @@ while(true){
             }
             saved_i++;
         }
-        saved_i = 50;
+        saved_i--;
+        //saved_i = 50;
+        //std::cerr << "RRCI len: " <<RRC_I.size() <<" \n";
+        //std::cerr << "RRC_I_samples len:" <<RRC_I_samples.size() <<" \n";
         //std::cerr << "i: " <<saved_i <<" \n";
+        //std::cerr << "bin 50: " <<bin_50 <<" \n";
         shift_state = (shift_state+sample_spacing*(saved_i-bin_50) + t_shift_state + 24) - (RRC_I.size()-1);
-        shift_state--;
+        //shift_state--;
         //std::cerr << "Saved State: " <<shift_state <<" \n";
 
-        if(block_count == 1){
-            //std::vector<float> vector_index;
-            //genIndexVector(vector_index,RRC_I.size());
-            logVector2("RRC_I_c",RRC_I_samples,RRC_Q_samples );
+        // if(block_count == 1){
+        //     //std::vector<float> vector_index;
+        //     //genIndexVector(vector_index,RRC_I.size());
+        //     logVector2("RRC_I_c",RRC_I_samples,RRC_Q_samples );
 
-            std::vector<float> vector_index;
-            genIndexVector(vector_index,RRC_I.size());
-            logVector("RRC_I",vector_index,RRC_I );
+        //     std::vector<float> vector_index;
+        //     genIndexVector(vector_index,RRC_I.size());
+        //     logVector("RRC_I",vector_index,RRC_I );
 
-            //std::vector<float> vector_index;
-            genIndexVector(vector_index,RRC_Q.size());
-            logVector("RRC_Q",vector_index,RRC_Q );
+        //     //std::vector<float> vector_index;
+        //     genIndexVector(vector_index,RRC_Q.size());
+        //     logVector("RRC_Q",vector_index,RRC_Q );
 
-            //std::vector<float> vector_index;
-            genIndexVector(vector_index,rrc_coeff.size());
-            logVector("RRC_coeff",vector_index,rrc_coeff );
-        }
+        //     //std::vector<float> vector_index;
+        //     genIndexVector(vector_index,rrc_coeff.size());
+        //     logVector("RRC_coeff",vector_index,rrc_coeff );
+        // }
 
-        if(block_count == 0){
-            //std::vector<float> vector_index;
-            //genIndexVector(vector_index,RRC_I.size());
-            logVector2("RRC_I_c0",RRC_I_samples,RRC_Q_samples );
+        // if(block_count == 0){
+        //     //std::vector<float> vector_index;
+        //     //genIndexVector(vector_index,RRC_I.size());
+        //     logVector2("RRC_I_c0",RRC_I_samples,RRC_Q_samples );
 
-            std::vector<float> vector_index;
-            genIndexVector(vector_index,RRC_I.size());
-            logVector("RRC_I0",vector_index,RRC_I );
+        //     std::vector<float> vector_index;
+        //     genIndexVector(vector_index,RRC_I.size());
+        //     logVector("RRC_I0",vector_index,RRC_I );
 
-            //std::vector<float> vector_index;
-            genIndexVector(vector_index,RRC_Q.size());
-            logVector("RRC_Q0",vector_index,RRC_Q );
+        //     //std::vector<float> vector_index;
+        //     genIndexVector(vector_index,RRC_Q.size());
+        //     logVector("RRC_Q0",vector_index,RRC_Q );
 
-            //std::vector<float> vector_index;
-            genIndexVector(vector_index,rrc_coeff.size());
-            logVector("RRC_coeff0",vector_index,rrc_coeff );
-        }
+        //     //std::vector<float> vector_index;
+        //     genIndexVector(vector_index,rrc_coeff.size());
+        //     logVector("RRC_coeff0",vector_index,rrc_coeff );
+        // }
 
-        if(block_count == 14){
-            //std::vector<float> vector_index;
-            //genIndexVector(vector_index,RRC_I.size());
-            logVector2("RRC_I_c2",RRC_I_samples,RRC_Q_samples );
+        // if(block_count == 14){
+        //     //std::vector<float> vector_index;
+        //     //genIndexVector(vector_index,RRC_I.size());
+        //     logVector2("RRC_I_c2",RRC_I_samples,RRC_Q_samples );
 
-            std::vector<float> vector_index;
-            genIndexVector(vector_index,RRC_I.size());
-            logVector("RRC_I2",vector_index,RRC_I );
+        //     std::vector<float> vector_index;
+        //     genIndexVector(vector_index,RRC_I.size());
+        //     logVector("RRC_I2",vector_index,RRC_I );
 
-            //std::vector<float> vector_index;
-            genIndexVector(vector_index,RRC_Q.size());
-            logVector("RRC_Q2",vector_index,RRC_Q );
+        //     //std::vector<float> vector_index;
+        //     genIndexVector(vector_index,RRC_Q.size());
+        //     logVector("RRC_Q2",vector_index,RRC_Q );
 
-            //std::vector<float> vector_index;
-            genIndexVector(vector_index,rrc_coeff.size());
-            logVector("RRC_coeff2",vector_index,rrc_coeff );
-        }
+        //     //std::vector<float> vector_index;
+        //     genIndexVector(vector_index,rrc_coeff.size());
+        //     logVector("RRC_coeff2",vector_index,rrc_coeff );
+        // }
 
-        if(block_count == 3){
-            //std::vector<float> vector_index;
-            //genIndexVector(vector_index,RRC_I.size());
-            logVector2("RRC_I_c3",RRC_I_samples,RRC_Q_samples );
+        // if(block_count == 3){
+        //     //std::vector<float> vector_index;
+        //     //genIndexVector(vector_index,RRC_I.size());
+        //     logVector2("RRC_I_c3",RRC_I_samples,RRC_Q_samples );
 
-            std::vector<float> vector_index;
-            genIndexVector(vector_index,RRC_I.size());
-            logVector("RRC_I3",vector_index,RRC_I );
+        //     std::vector<float> vector_index;
+        //     genIndexVector(vector_index,RRC_I.size());
+        //     logVector("RRC_I3",vector_index,RRC_I );
 
-            //std::vector<float> vector_index;
-            genIndexVector(vector_index,RRC_Q.size());
-            logVector("RRC_Q3",vector_index,RRC_Q );
+        //     //std::vector<float> vector_index;
+        //     genIndexVector(vector_index,RRC_Q.size());
+        //     logVector("RRC_Q3",vector_index,RRC_Q );
 
-            //std::vector<float> vector_index;
-            genIndexVector(vector_index,rrc_coeff.size());
-            logVector("RRC_coeff3",vector_index,rrc_coeff );
-        }
+        //     //std::vector<float> vector_index;
+        //     genIndexVector(vector_index,rrc_coeff.size());
+        //     logVector("RRC_coeff3",vector_index,rrc_coeff );
+        // }
 
-        if(block_count == 4){
-            //std::vector<float> vector_index;
-            //genIndexVector(vector_index,RRC_I.size());
-            logVector2("RRC_I_c4",RRC_I_samples,RRC_Q_samples );
+        // if(block_count == 4){
+        //     //std::vector<float> vector_index;
+        //     //genIndexVector(vector_index,RRC_I.size());
+        //     logVector2("RRC_I_c4",RRC_I_samples,RRC_Q_samples );
 
-            std::vector<float> vector_index;
-            genIndexVector(vector_index,RRC_I.size());
-            logVector("RRC_I4",vector_index,RRC_I );
+        //     std::vector<float> vector_index;
+        //     genIndexVector(vector_index,RRC_I.size());
+        //     logVector("RRC_I4",vector_index,RRC_I );
 
-            //std::vector<float> vector_index;
-            genIndexVector(vector_index,RRC_Q.size());
-            logVector("RRC_Q4",vector_index,RRC_Q );
+        //     //std::vector<float> vector_index;
+        //     genIndexVector(vector_index,RRC_Q.size());
+        //     logVector("RRC_Q4",vector_index,RRC_Q );
 
-            //std::vector<float> vector_index;
-            genIndexVector(vector_index,rrc_coeff.size());
-            logVector("RRC_coeff4",vector_index,rrc_coeff );
-        }
+        //     //std::vector<float> vector_index;
+        //     genIndexVector(vector_index,rrc_coeff.size());
+        //     logVector("RRC_coeff4",vector_index,rrc_coeff );
+        // }
 
 
         ////////Symbol Analysis
@@ -1539,220 +1611,6 @@ while(true){
         error_counter = 0;
         binary_data.clear();
         
-        if(bin_50_state == 0){
-            if(bin_50 == 0){
-                binary_data.resize(25,0.0);
-
-                for(auto i = 0; i <binary_data.size(); i++){
-                    if(RRC_I_samples[2*i+1] > 0 && RRC_I_samples[2*i] < 0)       //LH
-                        binary_data[i] = 0;
-                    else if(RRC_I_samples[2*i+1] < 0 && RRC_I_samples[2*i] > 0)        //HL
-                        binary_data[i] = 1;
-                    else{
-                        error_counter = error_counter + 1;
-                        if(error_counter == e_count_limit){
-                            HH_LL_detected = 1;
-                            bin_50_state = 0;
-                            next_symbol = RRC_I_samples[50];
-                            break;
-                        }else{
-                            if(abs(RRC_I_samples[2*i+1]) > abs(RRC_I_samples[2*i])){
-                                RRC_I_samples[2*i] = -1 * RRC_I_samples[2*i];
-                                if(RRC_I_samples[2*i+1] > 0 && RRC_I_samples[2*i] < 0)        //LH
-                                    binary_data[i] = 0;
-                                else if(RRC_I_samples[2*i+1] < 0 && RRC_I_samples[2*i] > 0)        //HL
-                                    binary_data[i] = 1;
-                            }else{
-                                RRC_I_samples[2*i+1] = -1 * RRC_I_samples[2*i+1];
-                                if(RRC_I_samples[2*i+1] > 0 && RRC_I_samples[2*i] < 0)        //LH
-                                    binary_data[i] = 0;
-                                else if(RRC_I_samples[2*i+1] < 0 && RRC_I_samples[2*i] > 0)       //HL
-                                    binary_data[i] = 1;
-                            }
-                        }
-                    }
-                }
-                if(HH_LL_detected == 0){
-                    bin_50_state = 1;
-                    next_symbol = RRC_I_samples[50];
-                }
-            }else if(bin_50 == 1){
-                binary_data.resize(25,0.0);
-
-                for(auto i = 0; i <binary_data.size(); i++){
-                    if(RRC_I_samples[2*i+1] > 0 && RRC_I_samples[2*i] < 0)        //LH
-                        binary_data[i] = 0;
-
-                    else if(RRC_I_samples[2*i+1] < 0 && RRC_I_samples[2*i] > 0)        //HL
-                        binary_data[i] = 1;
-                    else{
-                        error_counter = error_counter + 1;
-                        if(error_counter == e_count_limit){
-                            HH_LL_detected = 1;
-                            bin_50_state = 1;
-                            next_symbol = RRC_I_samples[49];
-                            break;
-                        }else{
-                            if(abs(RRC_I_samples[2*i+1]) > abs(RRC_I_samples[2*i])){
-                                RRC_I_samples[2*i] = -1 * RRC_I_samples[2*i];
-                                if(RRC_I_samples[2*i+1] > 0 && RRC_I_samples[2*i] < 0)        //LH
-                                    binary_data[i] = 0;
-                                else if(RRC_I_samples[2*i+1] < 0 && RRC_I_samples[2*i] > 0)        //HL
-                                    binary_data[i] = 1;
-                            }else{
-                                RRC_I_samples[2*i+1] = -1 * RRC_I_samples[2*i+1];
-                                if(RRC_I_samples[2*i+1] > 0 && RRC_I_samples[2*i] < 0)        //LH
-                                    binary_data[i] = 0;
-                                else if(RRC_I_samples[2*i+1] < 0 && RRC_I_samples[2*i] > 0)        //HL
-                                    binary_data[i] = 1;
-                            }
-                        }
-                    }
-                }
-                if(HH_LL_detected == 0){
-                    bin_50_state = 0;
-                    next_symbol = RRC_I_samples[50];
-                }
-            }
-        }else if(bin_50_state == 1){
-            if(bin_50 == 0){
-                binary_data.resize(26,0.0);
-
-                if(RRC_I_samples[0] > 0 && next_symbol < 0)       //LH
-                    binary_data[0] = 0;
-
-                else if(RRC_I_samples[0] < 0 && next_symbol > 0)       //HL
-                    binary_data[0] = 1;
-                else{
-                    error_counter = error_counter + 1;
-                    if(error_counter == e_count_limit){
-                        HH_LL_detected = 1;
-                        bin_50_state = 1;
-                        next_symbol = RRC_I_samples[50];
-                    }else{
-                        if(abs(RRC_I_samples[0]) > abs(next_symbol)){
-                            next_symbol = -1 * next_symbol;
-                            if(RRC_I_samples[0] > 0 && next_symbol < 0)       //LH
-                                binary_data[0] = 0;
-                            else if(RRC_I_samples[0] < 0 && next_symbol > 0)       //HL
-                                binary_data[0] = 1;
-                        }else{
-                            RRC_I_samples[0] = -1 * RRC_I_samples[0];
-                            if(RRC_I_samples[0] > 0 && next_symbol < 0)        //LH
-                                binary_data[0] = 0;
-                            else if(RRC_I_samples[0] < 0 && next_symbol > 0)        //HL
-                                binary_data[0] = 1;
-                        }
-                    }
-                }
-
-                if(HH_LL_detected == 0){
-                    for(auto i = 1; i <binary_data.size(); i++){
-                        if(RRC_I_samples[2*i] > 0 && RRC_I_samples[2*i-1] < 0)        //LH
-                            binary_data[i] = 0;
-
-                        else if(RRC_I_samples[2*i] < 0 && RRC_I_samples[2*i-1] > 0)        //HL
-                            binary_data[i] = 1;
-                        else{
-                            error_counter = error_counter + 1;
-                            if(error_counter == e_count_limit){
-                                HH_LL_detected = 1;
-                                bin_50_state = 1;
-                                next_symbol = RRC_I_samples[50];
-                                break;
-                            }else{
-                                if(abs(RRC_I_samples[2*i]) > abs(RRC_I_samples[2*i-1])){
-                                    RRC_I_samples[2*i-1] = -1 * RRC_I_samples[2*i-1];
-                                    if(RRC_I_samples[2*i] > 0 && RRC_I_samples[2*i-1] < 0)        //LH
-                                        binary_data[i] = 0;
-                                    else if(RRC_I_samples[2*i] < 0 && RRC_I_samples[2*i-1] > 0)        //HL
-                                        binary_data[i] = 1;
-                                }else{
-                                    RRC_I_samples[2*i] = -1 * RRC_I_samples[2*i];
-                                    if(RRC_I_samples[2*i] > 0 && RRC_I_samples[2*i-1] < 0)        //LH
-                                        binary_data[i] = 0;
-                                    else if(RRC_I_samples[2*i] < 0 && RRC_I_samples[2*i-1] > 0)        //HL
-                                        binary_data[i] = 1;
-                                }
-                            }
-                        }
-                    }
-                }
-                if(HH_LL_detected == 0){
-                    bin_50_state = 0;
-                    next_symbol = RRC_I_samples[50];
-                }
-            }else if(bin_50 == 1){
-                binary_data.resize(25,0.0);
-
-                if(RRC_I_samples[0] > 0 && next_symbol < 0)        //LH
-                    binary_data[0] = 0;
-
-                else if(RRC_I_samples[0] < 0 && next_symbol > 0)        //HL
-                    binary_data[0] = 1;
-                else{
-                    error_counter = error_counter + 1;
-                    if(error_counter == e_count_limit){
-                        HH_LL_detected = 1;
-                        bin_50_state = 0;
-                        next_symbol = RRC_I_samples[49];
-                    }else{
-                        if(abs(RRC_I_samples[0]) > abs(next_symbol)){
-                            next_symbol = -1 * next_symbol;
-                            if(RRC_I_samples[0] > 0 && next_symbol < 0)        //LH
-                                binary_data[0] = 0;
-                            else if(RRC_I_samples[0] < 0 && next_symbol > 0)        //HL
-                                binary_data[0] = 1;
-                        }else{
-                            RRC_I_samples[0] = -1 * RRC_I_samples[0];
-                            if(RRC_I_samples[0] > 0 && next_symbol < 0)        //LH
-                                binary_data[0] = 0;
-                            else if(RRC_I_samples[0] < 0 && next_symbol > 0)        //HL
-                                binary_data[0] = 1;
-                        }
-                    }
-                }
-                if(HH_LL_detected == 0){
-                    for(auto i = 1; i <binary_data.size(); i++){
-                        if(RRC_I_samples[2*i] > 0 && RRC_I_samples[2*i-1] < 0)        //LH
-                            binary_data[i] = 0;
-
-                        else if(RRC_I_samples[2*i] < 0 && RRC_I_samples[2*i-1] > 0)        //HL
-                            binary_data[i] = 1;
-                        else{
-                            error_counter = error_counter + 1;
-                            if(error_counter == e_count_limit){
-                                HH_LL_detected = 1;
-                                bin_50_state = 0;
-                                next_symbol = RRC_I_samples[49];
-                                break;
-                            }else{
-                                if(abs(RRC_I_samples[2*i]) > abs(RRC_I_samples[2*i-1])){
-                                    RRC_I_samples[2*i-1] = -1 * RRC_I_samples[2*i-1];
-                                    if(RRC_I_samples[2*i] > 0 && RRC_I_samples[2*i-1] < 0)        //LH
-                                        binary_data[i] = 0;
-                                    else if(RRC_I_samples[2*i] < 0 && RRC_I_samples[2*i-1] > 0)        //HL
-                                        binary_data[i] = 1;
-                                }else{
-                                    RRC_I_samples[2*i] = -1 * RRC_I_samples[2*i];
-                                    if(RRC_I_samples[2*i] > 0 && RRC_I_samples[2*i-1] < 0)        //LH
-                                        binary_data[i] = 0;
-                                    else if(RRC_I_samples[2*i] < 0 && RRC_I_samples[2*i-1] > 0)        //HL
-                                        binary_data[i] = 1;
-                                }
-                            }
-                        }
-                    }
-                }
-                if(HH_LL_detected == 0){
-                    bin_50_state = 1;
-                    next_symbol = RRC_I_samples[49];
-                }
-            }
-        }
-
-        //std::cerr << "next_symbol start" <<next_symbol<< " \n";
-
         // // if(bin_50_state == 0){
         // //     if(bin_50 == 0){
         // //         binary_data.resize(25,0.0);
@@ -1770,10 +1628,17 @@ while(true){
         // //                     next_symbol = RRC_I_samples[50];
         // //                     break;
         // //                 }else{
-        // //                     if(RRC_I_samples[2*i+1] > RRC_I_samples[2*i]){     //LH
+        // //                     if(abs(RRC_I_samples[2*i+1]) > abs(RRC_I_samples[2*i])){
+        // //                         RRC_I_samples[2*i] = -1 * RRC_I_samples[2*i];
+        // //                         if(RRC_I_samples[2*i+1] > 0 && RRC_I_samples[2*i] < 0)        //LH
         // //                             binary_data[i] = 0;
-                                
+        // //                         else if(RRC_I_samples[2*i+1] < 0 && RRC_I_samples[2*i] > 0)        //HL
+        // //                             binary_data[i] = 1;
         // //                     }else{
+        // //                         RRC_I_samples[2*i+1] = -1 * RRC_I_samples[2*i+1];
+        // //                         if(RRC_I_samples[2*i+1] > 0 && RRC_I_samples[2*i] < 0)        //LH
+        // //                             binary_data[i] = 0;
+        // //                         else if(RRC_I_samples[2*i+1] < 0 && RRC_I_samples[2*i] > 0)       //HL
         // //                             binary_data[i] = 1;
         // //                     }
         // //                 }
@@ -1800,10 +1665,17 @@ while(true){
         // //                     next_symbol = RRC_I_samples[49];
         // //                     break;
         // //                 }else{
-        // //                     if(RRC_I_samples[2*i+1] > RRC_I_samples[2*i]){        //LH
+        // //                     if(abs(RRC_I_samples[2*i+1]) > abs(RRC_I_samples[2*i])){
+        // //                         RRC_I_samples[2*i] = -1 * RRC_I_samples[2*i];
+        // //                         if(RRC_I_samples[2*i+1] > 0 && RRC_I_samples[2*i] < 0)        //LH
         // //                             binary_data[i] = 0;
-                                
-        // //                     }else{       //HL
+        // //                         else if(RRC_I_samples[2*i+1] < 0 && RRC_I_samples[2*i] > 0)        //HL
+        // //                             binary_data[i] = 1;
+        // //                     }else{
+        // //                         RRC_I_samples[2*i+1] = -1 * RRC_I_samples[2*i+1];
+        // //                         if(RRC_I_samples[2*i+1] > 0 && RRC_I_samples[2*i] < 0)        //LH
+        // //                             binary_data[i] = 0;
+        // //                         else if(RRC_I_samples[2*i+1] < 0 && RRC_I_samples[2*i] > 0)        //HL
         // //                             binary_data[i] = 1;
         // //                     }
         // //                 }
@@ -1830,10 +1702,17 @@ while(true){
         // //                 bin_50_state = 1;
         // //                 next_symbol = RRC_I_samples[50];
         // //             }else{
-        // //                 if(RRC_I_samples[0] > next_symbol){      //LH
+        // //                 if(abs(RRC_I_samples[0]) > abs(next_symbol)){
+        // //                     next_symbol = -1 * next_symbol;
+        // //                     if(RRC_I_samples[0] > 0 && next_symbol < 0)       //LH
         // //                         binary_data[0] = 0;
-                            
-        // //                 }else{      //HL
+        // //                     else if(RRC_I_samples[0] < 0 && next_symbol > 0)       //HL
+        // //                         binary_data[0] = 1;
+        // //                 }else{
+        // //                     RRC_I_samples[0] = -1 * RRC_I_samples[0];
+        // //                     if(RRC_I_samples[0] > 0 && next_symbol < 0)        //LH
+        // //                         binary_data[0] = 0;
+        // //                     else if(RRC_I_samples[0] < 0 && next_symbol > 0)        //HL
         // //                         binary_data[0] = 1;
         // //                 }
         // //             }
@@ -1854,9 +1733,17 @@ while(true){
         // //                         next_symbol = RRC_I_samples[50];
         // //                         break;
         // //                     }else{
-        // //                         if(RRC_I_samples[2*i] > RRC_I_samples[2*i-1]){        //LH
+        // //                         if(abs(RRC_I_samples[2*i]) > abs(RRC_I_samples[2*i-1])){
+        // //                             RRC_I_samples[2*i-1] = -1 * RRC_I_samples[2*i-1];
+        // //                             if(RRC_I_samples[2*i] > 0 && RRC_I_samples[2*i-1] < 0)        //LH
         // //                                 binary_data[i] = 0;
-        // //                         }else{     //HL
+        // //                             else if(RRC_I_samples[2*i] < 0 && RRC_I_samples[2*i-1] > 0)        //HL
+        // //                                 binary_data[i] = 1;
+        // //                         }else{
+        // //                             RRC_I_samples[2*i] = -1 * RRC_I_samples[2*i];
+        // //                             if(RRC_I_samples[2*i] > 0 && RRC_I_samples[2*i-1] < 0)        //LH
+        // //                                 binary_data[i] = 0;
+        // //                             else if(RRC_I_samples[2*i] < 0 && RRC_I_samples[2*i-1] > 0)        //HL
         // //                                 binary_data[i] = 1;
         // //                         }
         // //                     }
@@ -1882,9 +1769,17 @@ while(true){
         // //                 bin_50_state = 0;
         // //                 next_symbol = RRC_I_samples[49];
         // //             }else{
-        // //                 if(RRC_I_samples[0] > next_symbol){       //LH
+        // //                 if(abs(RRC_I_samples[0]) > abs(next_symbol)){
+        // //                     next_symbol = -1 * next_symbol;
+        // //                     if(RRC_I_samples[0] > 0 && next_symbol < 0)        //LH
         // //                         binary_data[0] = 0;
-        // //                 }else{       //HL
+        // //                     else if(RRC_I_samples[0] < 0 && next_symbol > 0)        //HL
+        // //                         binary_data[0] = 1;
+        // //                 }else{
+        // //                     RRC_I_samples[0] = -1 * RRC_I_samples[0];
+        // //                     if(RRC_I_samples[0] > 0 && next_symbol < 0)        //LH
+        // //                         binary_data[0] = 0;
+        // //                     else if(RRC_I_samples[0] < 0 && next_symbol > 0)        //HL
         // //                         binary_data[0] = 1;
         // //                 }
         // //             }
@@ -1904,9 +1799,17 @@ while(true){
         // //                         next_symbol = RRC_I_samples[49];
         // //                         break;
         // //                     }else{
-        // //                         if(RRC_I_samples[2*i] > RRC_I_samples[2*i-1]){        //LH
+        // //                         if(abs(RRC_I_samples[2*i]) > abs(RRC_I_samples[2*i-1])){
+        // //                             RRC_I_samples[2*i-1] = -1 * RRC_I_samples[2*i-1];
+        // //                             if(RRC_I_samples[2*i] > 0 && RRC_I_samples[2*i-1] < 0)        //LH
         // //                                 binary_data[i] = 0;
-        // //                         }else{       //HL
+        // //                             else if(RRC_I_samples[2*i] < 0 && RRC_I_samples[2*i-1] > 0)        //HL
+        // //                                 binary_data[i] = 1;
+        // //                         }else{
+        // //                             RRC_I_samples[2*i] = -1 * RRC_I_samples[2*i];
+        // //                             if(RRC_I_samples[2*i] > 0 && RRC_I_samples[2*i-1] < 0)        //LH
+        // //                                 binary_data[i] = 0;
+        // //                             else if(RRC_I_samples[2*i] < 0 && RRC_I_samples[2*i-1] > 0)        //HL
         // //                                 binary_data[i] = 1;
         // //                         }
         // //                     }
@@ -1919,6 +1822,175 @@ while(true){
         // //         }
         // //     }
         // // }
+
+        //std::cerr << "next_symbol start" <<next_symbol<< " \n";
+
+        if(bin_50_state == 0){
+            if(bin_50 == 0){
+                binary_data.resize(25,0.0);
+
+                for(auto i = 0; i <binary_data.size(); i++){
+                    if(RRC_I_samples[2*i+1] > 0 && RRC_I_samples[2*i] < 0)       //LH
+                        binary_data[i] = 0;
+                    else if(RRC_I_samples[2*i+1] < 0 && RRC_I_samples[2*i] > 0)        //HL
+                        binary_data[i] = 1;
+                    else{
+                        error_counter = error_counter + 1;
+                        if(error_counter == e_count_limit){
+                            HH_LL_detected = 1;
+                            bin_50_state = 0;
+                            next_symbol = RRC_I_samples[50];
+                            break;
+                        }else{
+                            if(RRC_I_samples[2*i+1] > RRC_I_samples[2*i]){     //LH
+                                    binary_data[i] = 0;
+                                
+                            }else{
+                                    binary_data[i] = 1;
+                            }
+                        }
+                    }
+                }
+                if(HH_LL_detected == 0){
+                    bin_50_state = 1;
+                    next_symbol = RRC_I_samples[50];
+                }
+            }else if(bin_50 == 1){
+                binary_data.resize(25,0.0);
+
+                for(auto i = 0; i <binary_data.size(); i++){
+                    if(RRC_I_samples[2*i+1] > 0 && RRC_I_samples[2*i] < 0)        //LH
+                        binary_data[i] = 0;
+
+                    else if(RRC_I_samples[2*i+1] < 0 && RRC_I_samples[2*i] > 0)        //HL
+                        binary_data[i] = 1;
+                    else{
+                        error_counter = error_counter + 1;
+                        if(error_counter == e_count_limit){
+                            HH_LL_detected = 1;
+                            bin_50_state = 1;
+                            next_symbol = RRC_I_samples[49];
+                            break;
+                        }else{
+                            if(RRC_I_samples[2*i+1] > RRC_I_samples[2*i]){        //LH
+                                    binary_data[i] = 0;
+                                
+                            }else{       //HL
+                                    binary_data[i] = 1;
+                            }
+                        }
+                    }
+                }
+                if(HH_LL_detected == 0){
+                    bin_50_state = 0;
+                    next_symbol = RRC_I_samples[50];
+                }
+            }
+        }else if(bin_50_state == 1){
+            if(bin_50 == 0){
+                binary_data.resize(26,0.0);
+
+                if(RRC_I_samples[0] > 0 && next_symbol < 0)       //LH
+                    binary_data[0] = 0;
+
+                else if(RRC_I_samples[0] < 0 && next_symbol > 0)       //HL
+                    binary_data[0] = 1;
+                else{
+                    error_counter = error_counter + 1;
+                    if(error_counter == e_count_limit){
+                        HH_LL_detected = 1;
+                        bin_50_state = 1;
+                        next_symbol = RRC_I_samples[50];
+                    }else{
+                        if(RRC_I_samples[0] > next_symbol){      //LH
+                                binary_data[0] = 0;
+                            
+                        }else{      //HL
+                                binary_data[0] = 1;
+                        }
+                    }
+                }
+
+                if(HH_LL_detected == 0){
+                    for(auto i = 1; i <binary_data.size(); i++){
+                        if(RRC_I_samples[2*i] > 0 && RRC_I_samples[2*i-1] < 0)        //LH
+                            binary_data[i] = 0;
+
+                        else if(RRC_I_samples[2*i] < 0 && RRC_I_samples[2*i-1] > 0)        //HL
+                            binary_data[i] = 1;
+                        else{
+                            error_counter = error_counter + 1;
+                            if(error_counter == e_count_limit){
+                                HH_LL_detected = 1;
+                                bin_50_state = 1;
+                                next_symbol = RRC_I_samples[50];
+                                break;
+                            }else{
+                                if(RRC_I_samples[2*i] > RRC_I_samples[2*i-1]){        //LH
+                                        binary_data[i] = 0;
+                                }else{     //HL
+                                        binary_data[i] = 1;
+                                }
+                            }
+                        }
+                    }
+                }
+                if(HH_LL_detected == 0){
+                    bin_50_state = 0;
+                    next_symbol = RRC_I_samples[50];
+                }
+            }else if(bin_50 == 1){
+                binary_data.resize(25,0.0);
+
+                if(RRC_I_samples[0] > 0 && next_symbol < 0)        //LH
+                    binary_data[0] = 0;
+
+                else if(RRC_I_samples[0] < 0 && next_symbol > 0)        //HL
+                    binary_data[0] = 1;
+                else{
+                    error_counter = error_counter + 1;
+                    if(error_counter == e_count_limit){
+                        HH_LL_detected = 1;
+                        bin_50_state = 0;
+                        next_symbol = RRC_I_samples[49];
+                    }else{
+                        if(RRC_I_samples[0] > next_symbol){       //LH
+                                binary_data[0] = 0;
+                        }else{       //HL
+                                binary_data[0] = 1;
+                        }
+                    }
+                }
+                if(HH_LL_detected == 0){
+                    for(auto i = 1; i <binary_data.size(); i++){
+                        if(RRC_I_samples[2*i] > 0 && RRC_I_samples[2*i-1] < 0)        //LH
+                            binary_data[i] = 0;
+
+                        else if(RRC_I_samples[2*i] < 0 && RRC_I_samples[2*i-1] > 0)        //HL
+                            binary_data[i] = 1;
+                        else{
+                            error_counter = error_counter + 1;
+                            if(error_counter == e_count_limit){
+                                HH_LL_detected = 1;
+                                bin_50_state = 0;
+                                next_symbol = RRC_I_samples[49];
+                                break;
+                            }else{
+                                if(RRC_I_samples[2*i] > RRC_I_samples[2*i-1]){        //LH
+                                        binary_data[i] = 0;
+                                }else{       //HL
+                                        binary_data[i] = 1;
+                                }
+                            }
+                        }
+                    }
+                }
+                if(HH_LL_detected == 0){
+                    bin_50_state = 1;
+                    next_symbol = RRC_I_samples[49];
+                }
+            }
+        }
 
         //std::cerr << "HHLL " << ((error_counter == e_count_limit) ? "Detected" : "No!") <<" - Block: " << block_count << " \n";
         //printRealVectorint(binary_data);
@@ -2101,7 +2173,7 @@ void RDS_1(
 
 
 
-void binFEthreadMethod_0(bool &floatMode, 
+void binFEthreadMethod_0(
     const int &block_size, 
     std::vector<double> &iq_data,
     int &sample_counter,
@@ -2117,17 +2189,21 @@ void binFEthreadMethod_0(bool &floatMode,
     std::vector<double> &fm_demod,
     std::queue<std::vector<double>> &my_queue,
     std::mutex &my_mutex,
-    std::condition_variable &my_cvar
+    std::condition_variable &my_cvar,
+    std::queue<std::vector<double>> &RDS_queue,
+    std::mutex &RDS_mutex,
+    std::condition_variable &RDS_cvar
 
 
 ){
     while(true){
-
+        
+        //std::cerr << "FE\n";
+        //std::cerr << "Size AUDIO : "<<my_queue.size()<<" Size RDS : "<<RDS_queue.size()<< " -FE\n";
 
     //////////////////Generate/////////////////////////    
         
                 readStdinBlockData(block_size,iq_data);
-                
 
                 if((std::cin.rdstate())!=0){
                     //std::cerr << "End of Input Stream";
@@ -2155,18 +2231,48 @@ void binFEthreadMethod_0(bool &floatMode,
                 fmDemodArctanBlock(fm_demod,i_ds, q_ds, state_phase);
     //////////////////Generate/////////////////////////
 
-
+        //std::cerr << "FE about to lock\n";
     //////////////////Queue/////////////////////////
+        
+        //std::cerr << "FE locked\n";
         std::unique_lock<std::mutex> my_lock(my_mutex);
         if(my_queue.size() == QUEUE_bLoCks){
-            //std::cerr << "QUEUE Waiting...";
-            my_cvar.wait(my_lock);
+                
+                //std::cerr << "QUEUE Waiting...\n";
+                my_cvar.wait(my_lock);
+                
         }
         my_queue.push(fm_demod);
+
+        std::unique_lock<std::mutex> RDS_lock(RDS_mutex);
+        if(RDS_queue.size() == QUEUE_bLoCks){
+                
+                //std::cerr << "QUEUE Waiting...\n";
+                RDS_cvar.wait(RDS_lock);
+                
+            
+        }
+
+
+
+        RDS_queue.push(fm_demod);
+        //std::cerr << "FE Pushed\n";
+
+        RDS_lock.unlock();
+
+        
+        RDS_cvar.notify_all();
+
+        
         
 
+        //std::cerr << "FE Pushed\n";
+
         my_lock.unlock();
-        my_cvar.notify_one();
+        my_cvar.notify_all();
+
+        
+        
 
 
 
@@ -2181,7 +2287,7 @@ void binFEthreadMethod_0(bool &floatMode,
     }
 }
 
-void floatFEthreadMethod_00(bool &floatMode, 
+void floatFEthreadMethod_00( 
     const int &block_size, 
     std::vector<double> &iq_data,
     int &sample_counter,
@@ -2295,100 +2401,6 @@ void floatFEthreadMethod_00(bool &floatMode,
     }
 }
 
-void floatFEthreadMethod_01(bool &floatMode, 
-    const int &block_size, 
-    std::vector<double> &iq_data,
-    int &sample_counter,
-    std::vector<double> &i_samples_block,
-    std::vector<double> &q_samples_block,
-    std::vector<double> &rf_coeff,
-    int &mode,
-    std::vector<double> &i_ds,
-    std::vector<double> &q_ds,
-    std::vector<double> &state_i_lpf_100k,
-    std::vector<double> &state_q_lpf_100k,
-    std::vector<double> &state_phase,
-    std::vector<double> &fm_demod,
-    std::queue<std::vector<double>> &RDS_queue,
-    std::condition_variable &RDS_cvar,
-    std::mutex &RDS_mutex
-
-
-){
-    while(true){
-        
-        //std::cerr << "FE\n";
-        //std::cerr << "Size AUDIO : "<<my_queue.size()<<" Size RDS : "<< RDS_queue.size()<< " -FE\n";
-
-    //////////////////Generate/////////////////////////    
-        
-                readStdinBlockDataFloat(block_size,iq_data);
-
-                if((std::cin.rdstate())!=0){
-                    //std::cerr << "End of Input Stream";
-                    exit(1);
-                }
-
-                
-
-                sample_counter = 0;
-                for (auto i = 0; i < iq_data.size() - 1; i = i + 2)
-                {
-                    i_samples_block[sample_counter] = iq_data[i];
-                    q_samples_block[sample_counter] = iq_data[i+1];
-                    sample_counter++;
-                }
-                // if(mode == 1) {
-                // std::cout << "Mode is 1\n"; upsampleIQSamples(i_samples_block, q_samples_block);
-                // }
-                
-                
-                convolveFIR_N_dec(10, i_ds, i_samples_block, rf_coeff,state_i_lpf_100k);
-                convolveFIR_N_dec(10, q_ds, q_samples_block, rf_coeff,state_q_lpf_100k);
-
-                
-                fmDemodArctanBlock(fm_demod,i_ds, q_ds, state_phase);
-    //////////////////Generate/////////////////////////
-
-        //std::cerr << "FE about to lock\n";
-    //////////////////Queue/////////////////////////
-        
-        //std::cerr << "FE locked\n";
-        
-
-        
-        //std::cerr << "FE locked\n";
-        std::unique_lock<std::mutex> RDS_lock(RDS_mutex);
-        if(RDS_queue.size() == QUEUE_bLoCks){
-                
-                //std::cerr << "QUEUE Waiting...\n";
-                RDS_cvar.wait(RDS_lock);
-                
-            
-        }
-
-
-
-        RDS_queue.push(fm_demod);
-        //std::cerr << "FE Pushed\n";
-
-        RDS_lock.unlock();
-
-        
-        RDS_cvar.notify_all();
-
-
-
-
-
-
-
-    //////////////////Queue/////////////////////////
-
-
-
-    }
-}
 
 
 void stereoAuDiOtHrEaDmEtHoD_0(
@@ -2535,9 +2547,18 @@ void monoAuDiOtHrEaDmEtHoD_0(
     std::condition_variable &my_cvar
 
 ){
+
+
     while(true){
     //////////////////Queue/////////////////////////
-        
+        std::unique_lock<std::mutex> my_lock(my_mutex);
+        if(my_queue.empty()){
+            //std::cerr << "MO Audio Waiting...";
+            my_cvar.wait(my_lock);
+        }
+
+        fm_demod = my_queue.front();
+        my_queue.pop();
 
 
 
@@ -2565,7 +2586,8 @@ void monoAuDiOtHrEaDmEtHoD_0(
 
 
         //////////////////Queue/////////////////////////
-             
+           my_lock.unlock();
+            my_cvar.notify_one();  
         
 
             
@@ -2592,7 +2614,7 @@ void monoAuDiOtHrEaDmEtHoD_0(
 
 
 
-void binFEthreadMethod_1(bool &floatMode, 
+void binFEthreadMethod_1(
     const int &block_size, 
     std::vector<double> &iq_data,
     int &sample_counter,
@@ -2672,7 +2694,7 @@ void binFEthreadMethod_1(bool &floatMode,
     }
 }
 
-void floatFEthreadMethod_1(bool &floatMode, 
+void floatFEthreadMethod_1( 
     const int &block_size, 
     std::vector<double> &iq_data,
     int &sample_counter,
@@ -2804,7 +2826,7 @@ void stereoAuDiOtHrEaDmEtHoD_1(
 
 
     //////////////////Compute/////////////////////////
-        convolve_UPSAMPLE_N_dec(decimator, 24, audio_ds,fm_demod,audio_coeff,state_conv);
+        convolve_UPSAMPLE_N_dec_New(decimator, 24, audio_ds,fm_demod,audio_coeff,state_conv);
 
 
         
@@ -2817,7 +2839,7 @@ void stereoAuDiOtHrEaDmEtHoD_1(
             stereo_data[i] = ncoOut[i] * st_ds[i] * 2;
         }
 
-        convolve_UPSAMPLE_N_dec(decimator, 24, stereo_data_ds, stereo_data, audio_coeff,state_stereo_data);
+        convolve_UPSAMPLE_N_dec_New(decimator, 24, stereo_data_ds, stereo_data, audio_coeff,state_stereo_data);
 
         for(unsigned int i=0 ; i < audio_ds.size() ; i++){
         
@@ -2881,6 +2903,8 @@ void monoAuDiOtHrEaDmEtHoD_1(
     std::condition_variable &my_cvar
 
 ){
+
+    int loopcnt = 0;
     while(true){
     //////////////////Queue/////////////////////////
         std::unique_lock<std::mutex> my_lock(my_mutex);
@@ -2904,10 +2928,24 @@ void monoAuDiOtHrEaDmEtHoD_1(
 
 
     //////////////////Compute/////////////////////////
+
+
+        //convolveFIR_N_dec(1,fm_demod_alia,fm_demod,anti_imag_coeff,fm_demod_alia_state);
+
         convolve_UPSAMPLE_N_dec(decimator,24, audio_ds,fm_demod,audio_coeff,state_conv);
+        
+        // fm_demod_us.resize(fm_demod.size()*24);
+        // for (auto i = 0; i < fm_demod.size(); i++)
+        // {
+        //     fm_demod_us[24*i] = fm_demod[i];
+        // }
 
+        // convolveFIR_N_dec(1,fm_demod_alia,fm_demod_us,anti_imag_coeff,fm_demod_alia_state);
+        // convolveFIR_N_dec(125,audio_ds,fm_demod_alia,ds_coeff,ds_state);
 
-            
+        
+        
+        
         for(unsigned int k=0 ; k < audio_ds.size() ; k++){
             if(std::isnan(audio_ds[k])) audio_data[k] = 0;
             else audio_data[k] = (short int)(audio_ds[k] * 16384);
@@ -2923,13 +2961,33 @@ void monoAuDiOtHrEaDmEtHoD_1(
 
 
 
-
+        
 
 
 
         //////////////////Queue/////////////////////////
 
+        // std::vector<float> index_vector;
+        // std::vector<double> psd_est,freq;
+        // int NFFT_in = 512;
+        // double fsin = 
+        // genIndexVector(index_vector, ncoOut.size());
 
+        // estimatePSD()
+
+        // if(loopcnt == 0){
+        //     logVector("pll_block_0",index_vector,ncoOut);
+        //     logVector("st_ds_0",index_vector,st_ds);
+        // }
+        // if(loopcnt == 1){
+        //     logVector("pll_block_1",index_vector,ncoOut);
+        //     logVector("st_ds_1",index_vector,st_ds);
+        // }
+        // if(loopcnt == 2){
+        //     logVector("pll_block_2",index_vector,ncoOut);
+        //     logVector("st_ds_2",index_vector,st_ds);
+        // }
+        // loopcnt++;
     }
 }
 

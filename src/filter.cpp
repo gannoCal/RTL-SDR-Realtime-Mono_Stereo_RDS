@@ -187,9 +187,104 @@ void fmDemodArctanBlockSlow(std::vector<double> &fm_demod,std::vector<double> &I
 }
 
 
-void convolve_UPSAMPLE_N_dec(int step_size,int upsample_size, std::vector<double> &y, const std::vector<double> &x, const std::vector<double> &h, std::vector<double> &state)
+// void convolve_UPSAMPLE_N_dec_New(int step_size,int upsample_size, std::vector<double> &y, const std::vector<double> &x, const std::vector<double> &h, std::vector<double> &state)
+// {
+//     y.resize(trunc(/*upsample_size**/x.size()/step_size));
+//     auto max_size = x.size();
+// 	if (h.size() > max_size)
+// 	{
+// 		max_size = h.size();
+// 	}
+//     int r0;
+//     int limit;
+//     int u = upsample_size;
+//     int d = step_size;
+//     int test = 0;
+//     int testcnt = 0;
+// 	for (auto n = 0; n < y.size(); n++){
+//         r0 = h.size()%upsample_size;
+//         limit = (n%upsample_size < r0) ? trunc(((double)h.size())/ (double)upsample_size)+1 : trunc(((double)h.size())/ (double)upsample_size);
+//         y[n] = 0;
+//         test = 0;
+//         //std::cerr << "limit " << limit << "\n";
+//         for(auto k = 0 ; k < limit ; k++){
+//             if (((n*d) - ((n*d)%u + u*k)) >= 0 && ((n*d) - ((n*d)%u + u*k)) < max_size){
+//                 y[n] += h[ (n*d)%u + u*k] * x[(n*d) - ((n*d)%u + u*k)];
+//                 test = 1;
+//             }else if((n*d) - ((n*d)%u + u*k) < 0 && state.size() > 0){
+//                 y[n] += h[ (n*d)%u + u*k] * state[state.size() + (n*d) - ((n*d)%u + u*k)];
+//                 test = 1;
+//             }
+//         }
+//         if(test == 1)
+//             testcnt++;
+        
+        
+//     }
+//     //std::cerr << "Testct " << testcnt << "\n";
+//     //std::cerr << "Maxsize " << max_size << "\n";
+    
+
+
+
+
+// 	for(auto ii = 0 ; ii < state.size(); ii++){
+// 		state[ii] = x[(x.size()) - state.size() + ii];
+// 	}
+
+// }
+
+
+void convolve_UPSAMPLE_N_dec_New(int step_size,int upsample_size, std::vector<double> &y, const std::vector<double> &x, const std::vector<double> &h, std::vector<double> &state)
 {
     y.resize(trunc(upsample_size*x.size()/step_size));
+    auto max_size = x.size();
+	if (h.size() > max_size)
+	{
+		max_size = h.size();
+	}
+    int r0;
+    int limit;
+    int u = upsample_size;
+    int d = step_size;
+    int test = 0;
+    int testcnt = 0;
+	for (auto n = 0; n < y.size(); n++){
+        r0 = h.size()%upsample_size;
+        limit = (n%upsample_size < r0) ? trunc(((double)h.size())/ (double)upsample_size)+1 : trunc(((double)h.size())/ (double)upsample_size);
+        y[n] = 0;
+        test = 0;
+        //std::cerr << "limit " << limit << "\n";
+        for(auto k = 0 ; k < limit ; k++){
+            if (trunc(n*d/u) - k >= 0 && trunc(n*d/u) - k < max_size){
+                y[n] += h[ (n*d)%u + u*k] * x[trunc(n*d/u) - k];
+                test = 1;
+            }else if(trunc(n*d/u) - k < 0 && state.size() > 0){
+                y[n] += h[ (n*d)%u + u*k] * state[state.size() + trunc(n*d/u) - k];
+                test = 1;
+            }
+        }
+        if(test == 1)
+            testcnt++;
+        
+        
+    }
+    //std::cerr << "Testct " << testcnt << "\n";
+    //std::cerr << "Maxsize " << max_size << "\n";
+    
+
+
+
+
+	for(auto ii = 0 ; ii < state.size(); ii++){
+		state[ii] = x[(x.size()) - state.size() + ii];
+	}
+
+}
+
+void convolve_UPSAMPLE_N_dec(int step_size,int upsample_size, std::vector<double> &y, const std::vector<double> &x, const std::vector<double> &h, std::vector<double> &state)
+{
+    //y.resize(trunc(upsample_size*x.size()/step_size));
 	auto max_size = x.size();
 	if (h.size() > max_size)
 	{
