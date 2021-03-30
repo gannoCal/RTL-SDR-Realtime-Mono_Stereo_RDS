@@ -23,6 +23,12 @@ void printComplexVector(const std::vector<std::complex<float>> &);
 
 void readBinData(const std::string, std::vector<float> &);
 
-void writeBinData(const std::string, const std::vector<float> &);
+void readRawData(const std::string, std::vector<uint8_t> &);
+
+void writeBinData(const std::string, const std::vector<double> &);
+
+void readStdinBlockData(unsigned int,std::vector<double> &);
+
+void readStdinBlockDataFloat(unsigned int,std::vector<double> &);
 
 #endif // DY4_IOFUNC_H
