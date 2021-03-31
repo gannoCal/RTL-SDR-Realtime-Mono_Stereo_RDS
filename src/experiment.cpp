@@ -1138,8 +1138,15 @@ void RDS_0(
     std::vector<double> RDS_Q_filt_ds;
 
     std::vector<double> rds_3k_coeff;
+    std::vector<double> ai_rds_3k_coeff;
 
+    impulseResponseLPF(240e3*19, 57e3/2, rds_exreco_taps, ai_rds_3k_coeff,1);
     impulseResponseLPF(240e3, 3e3, rds_exreco_taps, rds_3k_coeff,1);
+
+    for(auto i = 0 ; i < rds_3k_coeff.size() ; i++){
+        rds_3k_coeff[i] = rds_3k_coeff[i]*ai_rds_3k_coeff[i];
+    }
+
 
     std::vector<double> rrc_coeff;
     impulseResponseRootRaisedCosine(57e3,rds_exreco_taps,rrc_coeff);
@@ -1869,7 +1876,7 @@ void stereoAuDiOtHrEaDmEtHoD_0(
 
 
     //////////////////Compute/////////////////////////
-        convolveFIR_N_dec(decimator, audio_ds,fm_demod,audio_coeff,state_conv);
+        convolveFIR_N_dec(5, audio_ds,fm_demod,audio_coeff,state_conv);
 
 
         
@@ -1882,7 +1889,7 @@ void stereoAuDiOtHrEaDmEtHoD_0(
             stereo_data[i] = ncoOut[i] * st_ds[i] * 2;
         }
 
-        convolveFIR_N_dec(decimator, stereo_data_ds, stereo_data, audio_coeff,state_stereo_data);
+        convolveFIR_N_dec(5, stereo_data_ds, stereo_data, audio_coeff,state_stereo_data);
 
         for(unsigned int i=0 ; i < audio_ds.size() ; i++){
         
@@ -1970,7 +1977,8 @@ void monoAuDiOtHrEaDmEtHoD_0(
 
     //////////////////Compute/////////////////////////
         convolveFIR_N_dec(decimator, audio_ds,fm_demod,audio_coeff,state_conv);
-
+        
+        
 
             
         for(unsigned int k=0 ; k < audio_ds.size() ; k++){
@@ -2292,6 +2300,10 @@ void monoAuDiOtHrEaDmEtHoD_1(
     std::condition_variable &my_cvar
 
 ){
+    std::vector<double> ai_rds_3k_coeff;
+
+    
+
     while(true){
     //////////////////Queue/////////////////////////
         std::unique_lock<std::mutex> my_lock(my_mutex);

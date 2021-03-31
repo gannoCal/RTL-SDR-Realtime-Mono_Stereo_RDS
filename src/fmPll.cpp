@@ -32,7 +32,7 @@ void fmPll(std::vector<double> &pllIn, const double &freq,const double &Fs,const
     double Ci = 3.555;
     double Kp = (normBandwidth)*Cp;
     double Ki = (normBandwidth*normBandwidth)*Ci;
-    ncoOut.resize(pllIn.size()+1,0);
+    ncoOut.resize(pllIn.size(),0);
 // implement state saving later begin
     double integrator = prevstate[0];
     double phaseEst = prevstate[1];
@@ -57,10 +57,10 @@ void fmPll(std::vector<double> &pllIn, const double &freq,const double &Fs,const
 
         phaseEst = phaseEst + Kp*errorD + integrator;
 
-        trigArg = 2*PI*(freq/Fs)*(trigOffset+k+1) + phaseEst;
+        trigArg = 2*PI*(freq/Fs)*(trigOffset+k) + phaseEst;
         feedbackI = cos(trigArg);
         feedbackQ = sin(trigArg);
-        ncoOut[k+1] = cos(trigArg*ncoScale + phaseAdjust);
+        ncoOut[k] = cos(trigArg*ncoScale + phaseAdjust);
     }
 
     prevstate[0] = integrator;

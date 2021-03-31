@@ -17,7 +17,7 @@ Ontario, Canada
 #include <complex>
 
 // declaration of a function prototypes
-void printRealVector(const std::vector<float> &);
+void printRealVector(const std::vector<double> &);
 
 void printComplexVector(const std::vector<std::complex<float>> &);
 
