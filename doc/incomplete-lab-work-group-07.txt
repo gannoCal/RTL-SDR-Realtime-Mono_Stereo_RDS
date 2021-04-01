@@ -1,3 +1,6 @@
+Caleb Gannon 400137271
+Ben Stephens 400135219
+
 In regards to Lab 1 comment:
 -1 scipy block processing not implemented. The grade will be updated if the code was submitted as part of lab 2
 
