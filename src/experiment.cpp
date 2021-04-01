@@ -1149,8 +1149,8 @@ while(true){
         }
         convolveFIR_N_dec_RDS(1,reco_filt,sq_extr_filt,reco_coeff,state_reco);
 
-        fmPll_RDS(reco_filt,PLLfreq1,PLLfs1,
-        PLLNCOscale1,phaseAdjust1,normBandwidth1,ncoOut_I,prevstate1);
+        //fmPll_RDS(reco_filt,PLLfreq1,PLLfs1,
+        //PLLNCOscale1,phaseAdjust1,normBandwidth1,ncoOut_I,prevstate1);
 
         fmPll_RDS(reco_filt,PLLfreq,PLLfs,
         PLLNCOscale,phaseAdjust,normBandwidth,ncoOut_Q,prevstate);
@@ -1159,7 +1159,7 @@ while(true){
         RDS_Q.resize(ncoOut_I.size());
         RDS_I.resize(ncoOut_I.size());
         for(auto i = 0 ; i< extr_filt.size() ; i++){
-            RDS_Q[i] = ncoOut_I[i] * extr_filt[i] * 2;
+            //RDS_Q[i] = ncoOut_I[i] * extr_filt[i] * 2;
             RDS_I[i] = ncoOut_Q[i] * extr_filt[i] * 2;
         }
 
@@ -1174,10 +1174,10 @@ while(true){
         convolveFIR_N_dec_RDS(1,RRC_Q,RDS_Q_filt,rrc_coeff,state_RRC_Q);
         
         RRC_I_samples.resize(trunc(RRC_I.size()/24.0)+1);
-        RRC_Q_samples.resize(trunc(RRC_Q.size()/24.0)+1);
+        //RRC_Q_samples.resize(trunc(RRC_Q.size()/24.0)+1);
 
         //////Zero Finder
-        if(block_count == 0 /*|| error_counter == e_count_limit*/){
+        if(block_count == 0 || (error_counter == e_count_limit && t_shift_state == 0)){
             shift_state = 0;
             last_sign = 0;
             zero_at = 0;
@@ -1201,7 +1201,7 @@ while(true){
         }
 
         RRC_I.resize(RRC_I.size()+1,0.0);
-        RRC_Q.resize(RRC_I.size()+1,0.0);
+        //RRC_Q.resize(RRC_I.size()+1,0.0);
         ///////Sampler
         bin_50 = 0;
         saved_i = 0;
@@ -1212,7 +1212,7 @@ while(true){
                 break;
             }else{
                 RRC_I_samples[i] = RRC_I[shift_state+sample_spacing*i + t_shift_state]*20;
-                RRC_Q_samples[i] = RRC_Q[shift_state+sample_spacing*i + t_shift_state]*20;
+                //RRC_Q_samples[i] = RRC_Q[shift_state+sample_spacing*i + t_shift_state]*20;
             }
             saved_i++;
         }
