@@ -91,7 +91,4 @@ void readStdinBlockDataFloat(unsigned int num_samples,std::vector<double> &block
     for( auto i = 0 ; i < num_samples ; i++){
         block_data[i] = (double)raw_data[i];
     }
-    
-
-
 }

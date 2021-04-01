@@ -31,7 +31,4 @@ std::vector< std::vector<int> > &parityArray, std::vector<int> &syndrome);
 void Gfield_mult_reverse(std::vector<int> &MBA, std::vector< std::vector<int> > &parityArray, std::vector<int> &syndrome);
 void Gfield_mult(std::vector<int> &MBA, std::vector< std::vector<int> > &parityArray, std::vector<int> &syndrome);
 
-
-
-
 #endif // DY4_FILTER_H

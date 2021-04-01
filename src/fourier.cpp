@@ -17,12 +17,6 @@ void DFT(const std::vector<float> &x, std::vector<std::complex<float> > &Xf) {
 		for (long k = 0; k < x.size(); k++) {
 				std::complex<float> expval(0, -2*PI*(k*m) / x.size());
 				Xf[m] += x[k] * std::exp(expval);
-        // if(m == 4 && std::isnan(Xf[4].real())){
-        // std::cout << " Input values for " << Xf[4] << " \n";
-        //   for(auto j = 0 ; j < x.size() ; j++){
-        //     std::cout << "value " << j <<" : " << x[j] << " \n";
-        //   }
-        // }
 		}
 	}
 }
@@ -47,7 +41,6 @@ void estimatePSD(std::vector<double> &Samples, int &NFFT_in, double &Fs, std::ve
 
 	for(long ii = 0 ; ii < freq.size() ; ii++){
 		freq[ii] = df*ii;
-		//printf("%f\n\n",freq[ii]);
 	}
 
 	std::vector<float> hann;
@@ -83,8 +76,6 @@ void estimatePSD(std::vector<double> &Samples, int &NFFT_in, double &Fs, std::ve
 			Xf[ii] = Xf_i[ii];
 		}
 
-
-
 		std::vector<float> Xmag;
 
 		computeVectorMagnitude(Xf,Xmag);
@@ -98,12 +89,6 @@ void estimatePSD(std::vector<double> &Samples, int &NFFT_in, double &Fs, std::ve
 		}
 
 		psd_list.insert(psd_list.end() , PSD_seg.begin() , PSD_seg.end());
-
-
-
-
-
-
 	}
 
 	psd_est.resize((int) (freq_bins / (float) 2 ),  static_cast<float>(0));
@@ -117,8 +102,4 @@ void estimatePSD(std::vector<double> &Samples, int &NFFT_in, double &Fs, std::ve
 		
 
 	}
-
-	
-
-
 }

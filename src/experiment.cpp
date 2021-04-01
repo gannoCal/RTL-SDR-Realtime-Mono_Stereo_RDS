@@ -15,8 +15,6 @@ Ontario, Canada
 #include "iofunc.h"
 #include "logfunc.h"
 
-
-
 void RDS_0(
     const int &block_size,
     int &if_Fs,
@@ -29,13 +27,11 @@ void RDS_0(
     std::condition_variable &out_cvar
 );
 
-
 void RDS_1(
     std::queue<std::vector<int>> &in_queue,
     std::mutex &in_mutex,
     std::condition_variable &in_cvar
 );
-
 
 void floatFEthreadMethod_0(bool &floatMode, 
     const int &block_size, 
@@ -143,7 +139,6 @@ void stereoAuDiOtHrEaDmEtHoD_0(
 
 );
 
-
 void floatFEthreadMethod_1(bool &floatMode, 
     const int &block_size, 
     std::vector<double> &iq_data,
@@ -244,7 +239,6 @@ void stereoAuDiOtHrEaDmEtHoD_1(
 
 );
 
-
 int main(int argc,char* argv[])
 {
     bool floatMode = false;
@@ -325,22 +319,12 @@ int main(int argc,char* argv[])
             exit(1);
         }
 
-
-        
-
         std::cerr << "Mode is : " << mode << " \n";
         std::cerr << "Param1 is : " << ModeIn1[0] << ModeIn1[1] << " \n";
         std::cerr << "Param2 is : " << ModeIn2[0] << ModeIn2[1] << " \n";
-
     }else{
         std::cerr << "Error. Please fix your input. " << " \n";
     }
-
-
-    
-
-
-	
 
 	int upsample = 0;
 	int rf_Fs = 2.4e6;
@@ -388,7 +372,6 @@ int main(int argc,char* argv[])
 	std::vector<double> fm_demod_fe;
     std::vector<double> fm_demod_audio;
 
-
 	impulseResponseLPF(rf_Fs, rf_Fc, rf_taps, rf_coeff,1);
 	impulseResponseLPF(audio_Fs, audio_Fc, audio_taps, audio_coeff,1);
     impulseResponseBPF(if_Fs, sband_Fb, sband_Fe, audio_taps, st_coeff,1);
@@ -405,8 +388,6 @@ int main(int argc,char* argv[])
 	int block_count = 0;
 	std::vector<double> state_i_lpf_100k(rf_taps-1, 0);
 	std::vector<double> state_q_lpf_100k(rf_taps-1, 0);
-	//vector<float> i_filt(rf_taps-1, 0);
-	//vector<float> q_filt(rf_taps-1, 0);
 	std::vector<double> i_ds((block_size)/20, 0);
 	std::vector<double> q_ds((block_size)/20, 0);
 
@@ -440,8 +421,6 @@ int main(int argc,char* argv[])
     std::vector<short int> stereo_block((block_size)/50, 0);
     std::vector<double> state_stereo_data(audio_taps-1, 0);
 
-	
-    //std::vector<short int> stereo_out_data(block_size/50);
     std::vector<short int> audio_data(block_size/100);
     std::vector<double> iq_data(block_size);
     std::vector<double> i_samples_block, q_samples_block;
@@ -509,7 +488,6 @@ if(mode == 0){
             std::ref(chester_cvar)
         );
 
-
         std::thread audio = std::thread(
             stereoAuDiOtHrEaDmEtHoD_0,
             std::ref(decimator),
@@ -626,7 +604,6 @@ if(mode == 0){
         rds0.join();
         rds1.join();
         audio.join();
-
         /////////////////////////////////////////////////////////Mono_float_0/////////////////////////////////////////////////////////
         }
     }else{
@@ -675,7 +652,6 @@ if(mode == 0){
             std::ref(chester_mutex),
             std::ref(chester_cvar)
         );
-
 
         std::thread audio = std::thread(
             stereoAuDiOtHrEaDmEtHoD_0,
@@ -758,7 +734,6 @@ if(mode == 0){
             std::ref(chester_cvar)
         );
 
-
         std::thread audio = std::thread(
             monoAuDiOtHrEaDmEtHoD_0,
             std::ref(decimator),
@@ -796,8 +771,6 @@ if(mode == 0){
 
         /////////////////////////////////////////////////////////Mono_bin_0/////////////////////////////////////////////////////////
         }
-
-
     }
 }else{
 if(floatMode){
@@ -823,7 +796,6 @@ if(floatMode){
             std::ref(my_mutex),
             std::ref(my_cvar)
         );
-
 
         std::thread audio = std::thread(
             stereoAuDiOtHrEaDmEtHoD_1,
@@ -880,7 +852,6 @@ if(floatMode){
             std::ref(my_mutex),
             std::ref(my_cvar)
         );
-
 
         std::thread audio = std::thread(
             monoAuDiOtHrEaDmEtHoD_1,
@@ -941,7 +912,6 @@ if(floatMode){
             std::ref(my_cvar)
         );
 
-
         std::thread audio = std::thread(
             stereoAuDiOtHrEaDmEtHoD_1,
             std::ref(decimator),
@@ -998,7 +968,6 @@ if(floatMode){
             std::ref(my_cvar)
         );
 
-
         std::thread audio = std::thread(
             monoAuDiOtHrEaDmEtHoD_1,
             std::ref(decimator),
@@ -1034,26 +1003,10 @@ if(floatMode){
 
         /////////////////////////////////////////////////////////Mono_bin_1/////////////////////////////////////////////////////////
         }
-
-
     }
-
-
-
-
-
-
 }
-
-        
-        
-
 	// naturally, you can comment the line below once you are comfortable to run gnuplot
 	std::cout << "Run: gnuplot -e 'set terminal png size 1024,768' example.gnuplot > ../data/example.png\n";
-
-
-	//writeBinData("../data/new_binary69_test6.bin",audio_data);
-
 	return 0;
 }
 
@@ -1068,9 +1021,6 @@ void RDS_0(
     std::mutex &out_mutex,
     std::condition_variable &out_cvar
 ){
-
-    
-
     std::vector<double> fm_demod_RDS;
 
     std::vector<double> extr_coeff;
@@ -1082,18 +1032,13 @@ void RDS_0(
     std::vector<double> extr_filt;
     std::vector<double> state_extr(rds_exreco_taps-1,0.0);
 
-
     std::vector<double> sq_extr_filt;
     std::vector<double> reco_filt;
     std::vector<double> state_reco(rds_exreco_taps-1,0.0);
 
-    // double I_adj = PI/6 - PI/2 - PI/18 - 27*PI/180;
-    // double Q_adj = -PI/2 + PI/6 - PI/2 - PI/18 - 27*PI/180;
-
     double I_adj = PI/6 - PI/2 - PI/18 - 6*PI/180;
     double Q_adj = -PI/2 + PI/6 - PI/2 - 6*PI/180;
     
-
     std::vector<double> prevstate(6,0);
     prevstate[0] = 0.0;            //state_integrator = 0.0;
     prevstate[1] = 0.0;            //state_phaseEst = 0.0;
@@ -1147,7 +1092,6 @@ void RDS_0(
         rds_3k_coeff[i] = rds_3k_coeff[i]*ai_rds_3k_coeff[i];
     }
 
-
     std::vector<double> rrc_coeff;
     impulseResponseRootRaisedCosine(57e3,rds_exreco_taps,rrc_coeff);
 
@@ -1181,14 +1125,9 @@ void RDS_0(
 
     std::vector<int> binary_data;
 
-
-    
-
     int block_count = 0;
 
 while(true){
-    //std::cerr << "RDS" << block_count  << "\n";
-        
     //////////////////Queue/////////////////////////
     std::unique_lock<std::mutex> my_lock(my_mutex);
         if(my_queue.empty()){
@@ -1199,14 +1138,8 @@ while(true){
         fm_demod_RDS = my_queue.front();
         my_queue.pop();
     
-
-
-
     //////////////////Queue/////////////////////////
     
-
-
-
     //////////////////Compute/////////////////////////
         //std::this_thread::sleep_for (std::chrono::milliseconds(10));
         convolveFIR_N_dec_RDS(1,extr_filt,fm_demod_RDS,extr_coeff,state_extr);
@@ -1215,9 +1148,6 @@ while(true){
             sq_extr_filt[i] = extr_filt[i] * extr_filt[i]; 
         }
         convolveFIR_N_dec_RDS(1,reco_filt,sq_extr_filt,reco_coeff,state_reco);
-
-        
-        
 
         fmPll_RDS(reco_filt,PLLfreq1,PLLfs1,
         PLLNCOscale1,phaseAdjust1,normBandwidth1,ncoOut_I,prevstate1);
@@ -1233,12 +1163,9 @@ while(true){
             RDS_I[i] = ncoOut_Q[i] * extr_filt[i] * 2;
         }
 
-
-        //////I and Q swapped ^^^^^^^
+        //////Quick phase shift, I and Q swap
 
         convolve_UPSAMPLE_N_dec_New(80, 19, RDS_I_filt, RDS_I, rds_3k_coeff,state_RDS_I);
-       
-        
 
         convolveFIR_N_dec_RDS(1,RRC_I,RDS_I_filt,rrc_coeff,state_RRC_I);
 
@@ -1293,12 +1220,10 @@ while(true){
         
         shift_state = (shift_state+sample_spacing*(saved_i-bin_50) + t_shift_state + 24) - (RRC_I.size()-1);
         
-
         ////////Symbol Analysis
         HH_LL_detected = 0;
         error_counter = 0;
         binary_data.clear();
-        
         
         if(bin_50_state == 0){
             if(bin_50 == 0){
@@ -1467,19 +1392,10 @@ while(true){
             }
         }
 
-        
-
-
-
-
-
-
         block_count++;
         //////////////////Compute/////////////////////////
 
-
         //////////////////Queue/////////////////////////
-
         std::unique_lock<std::mutex> out_lock(out_mutex);
         if(out_queue.size() == QUEUE_bLoCks){
             std::cerr << "QUEUE Waiting...";
@@ -1487,17 +1403,13 @@ while(true){
         }
         out_queue.push(binary_data);
         
-
         out_lock.unlock();
         out_cvar.notify_one();
-
 
         my_lock.unlock();
         my_cvar.notify_one();
 
         //////////////////Queue/////////////////////////
-
-
     }
 }
 
@@ -1506,7 +1418,6 @@ void RDS_1(
     std::mutex &in_mutex,
     std::condition_variable &in_cvar
 ){
-
     std::vector<int> binary_data;
 
     std::vector< std::vector<int> > parityArray = { {1,0,0,0,0,0,0,0,0,0}, 
@@ -1549,10 +1460,8 @@ void RDS_1(
     std::vector<std::vector<int>> found_array;
     std::vector<int> syndrome(10,0);
 
-
     while (true)
     {
-
         //////////////////Queue/////////////////////////
         std::unique_lock<std::mutex> in_lock(in_mutex);
         if(in_queue.empty()){
@@ -1564,10 +1473,6 @@ void RDS_1(
         in_queue.pop();
         //////////////////Queue/////////////////////////
 
-
-
-
-
         //////////////////Compute/////////////////////////
         manchester_binary.resize( binary_data.size(), 0);
         manchester_binary[0] = (binary_data[0] != manchester_binary_state) ? 1 : 0;
@@ -1576,46 +1481,23 @@ void RDS_1(
         nSync_Hit_counter, nSync_Flop_counter, allowed_nSync_Flops, 
         found_array,
         parityArray, syndrome);
-        // if(found_array.size() > 0)
-             //printRealVectorint(manchester_binary_processing_array);
         for(auto i = 1 ; i < manchester_binary.size() ; i++){
             manchester_binary[i] = (binary_data[i] != binary_data[i-1]) ? 1 : 0;
             process_MBA(manchester_binary[i],manchester_binary_processing_array,previous_match, is_nSync, 
             nSync_Hit_counter, nSync_Flop_counter, allowed_nSync_Flops, 
             found_array,
             parityArray, syndrome);
-            // if(found_array.size() > 0)
-                 //printRealVectorint(manchester_binary_processing_array);
         }
         manchester_binary_state = binary_data[binary_data.size() - 1];
         
-
         //////////////////Compute/////////////////////////
-
-
-
 
         //////////////////Queue/////////////////////////
         in_lock.unlock();
         in_cvar.notify_one();
         //////////////////Queue/////////////////////////
-
-
-
-        
-
-
-
-
-
-        
     }
-    
-
-
-
 }
-
 
 //////////////////////////////////////////////////////////////////////////Mode 0 Methods///////////////////////////////////////////////////////////////////
 void binFEthreadMethod_0(bool &floatMode, 
@@ -1641,40 +1523,28 @@ void binFEthreadMethod_0(bool &floatMode,
 
 
 ){
-
-    
     while(true){
-
-
     //////////////////Generate/////////////////////////    
+        readStdinBlockData(block_size,iq_data);
+
+        if((std::cin.rdstate())!=0){
+            std::cerr << "End of Input Stream";
+            exit(1);
+        }
+
+        sample_counter = 0;
+        for (auto i = 0; i < iq_data.size() - 1; i = i + 2)
+        {
+            i_samples_block[sample_counter] = iq_data[i];
+            q_samples_block[sample_counter] = iq_data[i+1];
+            sample_counter++;
+        }
         
-                readStdinBlockData(block_size,iq_data);
-                
+        convolveFIR_N_dec(10, i_ds, i_samples_block, rf_coeff,state_i_lpf_100k);
+        convolveFIR_N_dec(10, q_ds, q_samples_block, rf_coeff,state_q_lpf_100k);
 
-                if((std::cin.rdstate())!=0){
-                    std::cerr << "End of Input Stream";
-                    exit(1);
-                }
-
-                
-
-                sample_counter = 0;
-                for (auto i = 0; i < iq_data.size() - 1; i = i + 2)
-                {
-                    i_samples_block[sample_counter] = iq_data[i];
-                    q_samples_block[sample_counter] = iq_data[i+1];
-                    sample_counter++;
-                }
-                // if(mode == 1) {
-                // std::cout << "Mode is 1\n"; upsampleIQSamples(i_samples_block, q_samples_block);
-                // }
-                
-                
-                convolveFIR_N_dec(10, i_ds, i_samples_block, rf_coeff,state_i_lpf_100k);
-                convolveFIR_N_dec(10, q_ds, q_samples_block, rf_coeff,state_q_lpf_100k);
-
-                
-                fmDemodArctanBlock(fm_demod,i_ds, q_ds, state_phase);
+        
+        fmDemodArctanBlock(fm_demod,i_ds, q_ds, state_phase);
     //////////////////Generate/////////////////////////
 
 
@@ -1688,17 +1558,10 @@ void binFEthreadMethod_0(bool &floatMode,
 
         std::unique_lock<std::mutex> RDS_lock(RDS_mutex);
         if(RDS_queue.size() == QUEUE_bLoCks){
-                
-                //std::cerr << "QUEUE Waiting...\n";
                 RDS_cvar.wait(RDS_lock);
-                
-            
         }
 
-
-
         RDS_queue.push(fm_demod);
-        //std::cerr << "FE Pushed\n";
 
         RDS_lock.unlock();
 
@@ -1709,16 +1572,7 @@ void binFEthreadMethod_0(bool &floatMode,
         my_lock.unlock();
         my_cvar.notify_one();
 
-
-
-
-
-
-
     //////////////////Queue/////////////////////////
-
-
-
     }
 }
 
@@ -1742,40 +1596,36 @@ void floatFEthreadMethod_0(bool &floatMode,
     std::queue<std::vector<double>> &RDS_queue,
     std::mutex &RDS_mutex,
     std::condition_variable &RDS_cvar
-
-
 ){
     while(true){
-
-
     //////////////////Generate/////////////////////////    
         
-                readStdinBlockDataFloat(block_size,iq_data);
+        readStdinBlockDataFloat(block_size,iq_data);
 
-                if((std::cin.rdstate())!=0){
-                    std::cerr << "End of Input Stream";
-                    exit(1);
-                }
+        if((std::cin.rdstate())!=0){
+            std::cerr << "End of Input Stream";
+            exit(1);
+        }
 
-                
+        
 
-                sample_counter = 0;
-                for (auto i = 0; i < iq_data.size() - 1; i = i + 2)
-                {
-                    i_samples_block[sample_counter] = iq_data[i];
-                    q_samples_block[sample_counter] = iq_data[i+1];
-                    sample_counter++;
-                }
-                // if(mode == 1) {
-                // std::cout << "Mode is 1\n"; upsampleIQSamples(i_samples_block, q_samples_block);
-                // }
-                
-                
-                convolveFIR_N_dec(10, i_ds, i_samples_block, rf_coeff,state_i_lpf_100k);
-                convolveFIR_N_dec(10, q_ds, q_samples_block, rf_coeff,state_q_lpf_100k);
+        sample_counter = 0;
+        for (auto i = 0; i < iq_data.size() - 1; i = i + 2)
+        {
+            i_samples_block[sample_counter] = iq_data[i];
+            q_samples_block[sample_counter] = iq_data[i+1];
+            sample_counter++;
+        }
+        // if(mode == 1) {
+        // std::cout << "Mode is 1\n"; upsampleIQSamples(i_samples_block, q_samples_block);
+        // }
+        
+        
+        convolveFIR_N_dec(10, i_ds, i_samples_block, rf_coeff,state_i_lpf_100k);
+        convolveFIR_N_dec(10, q_ds, q_samples_block, rf_coeff,state_q_lpf_100k);
 
-                
-                fmDemodArctanBlock(fm_demod,i_ds, q_ds, state_phase);
+        
+        fmDemodArctanBlock(fm_demod,i_ds, q_ds, state_phase);
     //////////////////Generate/////////////////////////
 
 
@@ -1789,37 +1639,18 @@ void floatFEthreadMethod_0(bool &floatMode,
 
         std::unique_lock<std::mutex> RDS_lock(RDS_mutex);
         if(RDS_queue.size() == QUEUE_bLoCks){
-                
-                //std::cerr << "QUEUE Waiting...\n";
                 RDS_cvar.wait(RDS_lock);
-                
-            
         }
-
-
-
         RDS_queue.push(fm_demod);
-        //std::cerr << "FE Pushed\n";
 
         RDS_lock.unlock();
 
-        
         RDS_cvar.notify_all();
-
 
         my_lock.unlock();
         my_cvar.notify_one();
 
-
-
-
-
-
-
     //////////////////Queue/////////////////////////
-
-
-
     }
 }
 
@@ -1857,29 +1688,16 @@ void stereoAuDiOtHrEaDmEtHoD_0(
     //////////////////Queue/////////////////////////
         std::unique_lock<std::mutex> my_lock(my_mutex);
         if(my_queue.empty()){
-            //std::cerr << "Audio Waiting...";
             my_cvar.wait(my_lock);
         }
 
         fm_demod = my_queue.front();
         my_queue.pop();
-
-
-
-
-
-
-
     //////////////////Queue/////////////////////////
-
-
-
 
     //////////////////Compute/////////////////////////
         convolveFIR_N_dec(5, audio_ds,fm_demod,audio_coeff,state_conv);
 
-
-        
         convolveFIR_N_dec(1, st_ds, fm_demod, st_coeff,state_st_240k);
         convolveFIR_N_dec(1, tone_ds, fm_demod, tone_coeff,state_tone_240k);
         
@@ -1895,32 +1713,17 @@ void stereoAuDiOtHrEaDmEtHoD_0(
         
         stereo_block[2*i+1] = std::isnan(audio_ds[i]) || std::isnan(stereo_data_ds[i]) ? (short int)0 :  (short int)(16384*(audio_ds[i] - stereo_data_ds[i]  ) / 2)   ;     //r
         stereo_block[2*i] = std::isnan(audio_ds[i]) || std::isnan(stereo_data_ds[i]) ? (short int)0 : (short int)(16384*(audio_ds[i]  + stereo_data_ds[i]  ) / 2)    ;   //l
-        //stereo_block[2*i+1] =  (short int)(16384*(audio_ds[i]));     //r
-        //stereo_block[2*i] = (short int)(16384*(audio_ds[i]));   //l
-        
         }
         
         fwrite(&stereo_block[0], sizeof(short int),stereo_block.size(),stdout);
         
-    
-    
-    
         //////////////////Compute/////////////////////////
-
 
         //////////////////Queue/////////////////////////
             my_lock.unlock();
             my_cvar.notify_one();
 
-
-
-
-
-
-
         //////////////////Queue/////////////////////////
-
-
     }
 }
 
@@ -1957,30 +1760,17 @@ void monoAuDiOtHrEaDmEtHoD_0(
     //////////////////Queue/////////////////////////
         std::unique_lock<std::mutex> my_lock(my_mutex);
         if(my_queue.empty()){
-            //std::cerr << "Audio Waiting...";
             my_cvar.wait(my_lock);
         }
 
         fm_demod = my_queue.front();
         my_queue.pop();
 
-
-
-
-
-
-
     //////////////////Queue/////////////////////////
-
-
-
 
     //////////////////Compute/////////////////////////
         convolveFIR_N_dec(decimator, audio_ds,fm_demod,audio_coeff,state_conv);
         
-        
-
-            
         for(unsigned int k=0 ; k < audio_ds.size() ; k++){
             if(std::isnan(audio_ds[k])) audio_data[k] = 0;
             else audio_data[k] = (short int)(audio_ds[k] * 16384);
@@ -1989,27 +1779,15 @@ void monoAuDiOtHrEaDmEtHoD_0(
     
         //////////////////Compute/////////////////////////
 
-
         //////////////////Queue/////////////////////////
             my_lock.unlock();
             my_cvar.notify_one();
 
-
-
-
-
-
-
         //////////////////Queue/////////////////////////
-
-
     }
 }
 
-
-
 //////////////////////////////////////////////////////////////////////////////////Mode 1 Methods///////////////////////////////////////////////////////////////////////
-
 
 void binFEthreadMethod_1(bool &floatMode, 
     const int &block_size, 
@@ -2028,41 +1806,37 @@ void binFEthreadMethod_1(bool &floatMode,
     std::queue<std::vector<double>> &my_queue,
     std::mutex &my_mutex,
     std::condition_variable &my_cvar
-
-
 ){
     while(true){
-
-
     //////////////////Generate/////////////////////////    
         
-                readStdinBlockData(block_size,iq_data);
-                
+        readStdinBlockData(block_size,iq_data);
+        
 
-                if((std::cin.rdstate())!=0){
-                    std::cerr << "End of Input Stream";
-                    exit(1);
-                }
+        if((std::cin.rdstate())!=0){
+            std::cerr << "End of Input Stream";
+            exit(1);
+        }
 
-                
+        
 
-                sample_counter = 0;
-                for (auto i = 0; i < iq_data.size() - 1; i = i + 2)
-                {
-                    i_samples_block[sample_counter] = iq_data[i];
-                    q_samples_block[sample_counter] = iq_data[i+1];
-                    sample_counter++;
-                }
-                // if(mode == 1) {
-                // std::cout << "Mode is 1\n"; upsampleIQSamples(i_samples_block, q_samples_block);
-                // }
-                
-                
-                convolveFIR_N_dec(10, i_ds, i_samples_block, rf_coeff,state_i_lpf_100k);
-                convolveFIR_N_dec(10, q_ds, q_samples_block, rf_coeff,state_q_lpf_100k);
+        sample_counter = 0;
+        for (auto i = 0; i < iq_data.size() - 1; i = i + 2)
+        {
+            i_samples_block[sample_counter] = iq_data[i];
+            q_samples_block[sample_counter] = iq_data[i+1];
+            sample_counter++;
+        }
+        // if(mode == 1) {
+        // std::cout << "Mode is 1\n"; upsampleIQSamples(i_samples_block, q_samples_block);
+        // }
+        
+        
+        convolveFIR_N_dec(10, i_ds, i_samples_block, rf_coeff,state_i_lpf_100k);
+        convolveFIR_N_dec(10, q_ds, q_samples_block, rf_coeff,state_q_lpf_100k);
 
-                
-                fmDemodArctanBlock(fm_demod,i_ds, q_ds, state_phase);
+        
+        fmDemodArctanBlock(fm_demod,i_ds, q_ds, state_phase);
     //////////////////Generate/////////////////////////
 
 
@@ -2077,17 +1851,7 @@ void binFEthreadMethod_1(bool &floatMode,
 
         my_lock.unlock();
         my_cvar.notify_one();
-
-
-
-
-
-
-
     //////////////////Queue/////////////////////////
-
-
-
     }
 }
 
@@ -2108,42 +1872,30 @@ void floatFEthreadMethod_1(bool &floatMode,
     std::queue<std::vector<double>> &my_queue,
     std::mutex &my_mutex,
     std::condition_variable &my_cvar
-
-
 ){
     while(true){
-
-
     //////////////////Generate/////////////////////////    
         
-                readStdinBlockDataFloat(block_size,iq_data);
+        readStdinBlockDataFloat(block_size,iq_data);
 
-                if((std::cin.rdstate())!=0){
-                    std::cerr << "End of Input Stream";
-                    exit(1);
-                }
+        if((std::cin.rdstate())!=0){
+            std::cerr << "End of Input Stream";
+            exit(1);
+        }
 
-                
+        sample_counter = 0;
+        for (auto i = 0; i < iq_data.size() - 1; i = i + 2)
+        {
+            i_samples_block[sample_counter] = iq_data[i];
+            q_samples_block[sample_counter] = iq_data[i+1];
+            sample_counter++;
+        }
+        
+        convolveFIR_N_dec(10, i_ds, i_samples_block, rf_coeff,state_i_lpf_100k);
+        convolveFIR_N_dec(10, q_ds, q_samples_block, rf_coeff,state_q_lpf_100k);
 
-                sample_counter = 0;
-                for (auto i = 0; i < iq_data.size() - 1; i = i + 2)
-                {
-                    i_samples_block[sample_counter] = iq_data[i];
-                    q_samples_block[sample_counter] = iq_data[i+1];
-                    sample_counter++;
-                }
-                // if(mode == 1) {
-                // std::cout << "Mode is 1\n"; upsampleIQSamples(i_samples_block, q_samples_block);
-                // }
-                
-                
-                convolveFIR_N_dec(10, i_ds, i_samples_block, rf_coeff,state_i_lpf_100k);
-                convolveFIR_N_dec(10, q_ds, q_samples_block, rf_coeff,state_q_lpf_100k);
-
-                
-                fmDemodArctanBlock(fm_demod,i_ds, q_ds, state_phase);
+        fmDemodArctanBlock(fm_demod,i_ds, q_ds, state_phase);
     //////////////////Generate/////////////////////////
-
 
     //////////////////Queue/////////////////////////
         std::unique_lock<std::mutex> my_lock(my_mutex);
@@ -2153,20 +1905,9 @@ void floatFEthreadMethod_1(bool &floatMode,
         }
         my_queue.push(fm_demod);
 
-
         my_lock.unlock();
         my_cvar.notify_one();
-
-
-
-
-
-
-
     //////////////////Queue/////////////////////////
-
-
-
     }
 }
 
@@ -2204,28 +1945,16 @@ void stereoAuDiOtHrEaDmEtHoD_1(
     //////////////////Queue/////////////////////////
         std::unique_lock<std::mutex> my_lock(my_mutex);
         if(my_queue.empty()){
-            //std::cerr << "Audio Waiting...";
             my_cvar.wait(my_lock);
         }
 
         fm_demod = my_queue.front();
         my_queue.pop();
 
-
-
-
-
-
-
     //////////////////Queue/////////////////////////
-
-
-
 
     //////////////////Compute/////////////////////////
         convolve_UPSAMPLE_N_dec(decimator, 24, audio_ds,fm_demod,audio_coeff,state_conv);
-
-
         
         convolveFIR_N_dec(1, st_ds, fm_demod, st_coeff,state_st_240k);
         convolveFIR_N_dec(1, tone_ds, fm_demod, tone_coeff,state_tone_240k);
@@ -2242,32 +1971,17 @@ void stereoAuDiOtHrEaDmEtHoD_1(
         
         stereo_block[2*i+1] = std::isnan(audio_ds[i]) || std::isnan(stereo_data_ds[i]) ? (short int)0 :  (short int)(16384*(audio_ds[i] - stereo_data_ds[i]  ) / 2)   ;     //r
         stereo_block[2*i] = std::isnan(audio_ds[i]) || std::isnan(stereo_data_ds[i]) ? (short int)0 : (short int)(16384*(audio_ds[i]  + stereo_data_ds[i]  ) / 2)    ;   //l
-        //stereo_block[2*i+1] =  (short int)(16384*(audio_ds[i]));     //r
-        //stereo_block[2*i] = (short int)(16384*(audio_ds[i]));   //l
-        
         }
         
         fwrite(&stereo_block[0], sizeof(short int),stereo_block.size(),stdout);
         
-    
-    
-    
         //////////////////Compute/////////////////////////
-
 
         //////////////////Queue/////////////////////////
             my_lock.unlock();
             my_cvar.notify_one();
 
-
-
-
-
-
-
         //////////////////Queue/////////////////////////
-
-
     }
 }
 
@@ -2302,34 +2016,19 @@ void monoAuDiOtHrEaDmEtHoD_1(
 ){
     std::vector<double> ai_rds_3k_coeff;
 
-    
-
     while(true){
     //////////////////Queue/////////////////////////
         std::unique_lock<std::mutex> my_lock(my_mutex);
         if(my_queue.empty()){
-            //std::cerr << "Audio Waiting...";
             my_cvar.wait(my_lock);
         }
 
         fm_demod = my_queue.front();
         my_queue.pop();
-
-
-
-
-
-
-
     //////////////////Queue/////////////////////////
-
-
-
 
     //////////////////Compute/////////////////////////
         convolve_UPSAMPLE_N_dec(decimator,24, audio_ds,fm_demod,audio_coeff,state_conv);
-
-
             
         for(unsigned int k=0 ; k < audio_ds.size() ; k++){
             if(std::isnan(audio_ds[k])) audio_data[k] = 0;
@@ -2339,19 +2038,10 @@ void monoAuDiOtHrEaDmEtHoD_1(
     
         //////////////////Compute/////////////////////////
 
-
         //////////////////Queue/////////////////////////
             my_lock.unlock();
             my_cvar.notify_one();
 
-
-
-
-
-
-
         //////////////////Queue/////////////////////////
-
-
     }
 }

@@ -12,8 +12,7 @@ Ontario, Canada
 #define PI 3.14159265358979323846
 
 /*
-
-IN THE VAR prevstate, each postion strores the following
+IN THE VAR prevstate, each postion stores the following
 
 prevstate[0] = integrator;
 prevstate[1] = phaseEst;
@@ -22,7 +21,6 @@ prevstate[3] = feedbackQ;
 prevstate[4] = ncoOut[ncoOut - 1];
 
 TO BE USED IN THE NEXT STATE
-
 */
 
 // function to generate a vector whose value is equal to its index

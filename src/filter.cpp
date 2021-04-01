@@ -106,8 +106,6 @@ void convolveFIR_N_dec(const int step_size, std::vector<double> &y, const std::v
 	for(auto ii = 0 ; ii < state.size(); ii++){
 		state[ii] = x[(x.size()) - state.size() + ii];
 	}
-
-	
 }
 
 void convolveFIR_N_dec_RDS(const int step_size, std::vector<double> &y, const std::vector<double> &x, const std::vector<double> &h, std::vector<double> &state )
@@ -139,8 +137,6 @@ void convolveFIR_N_dec_RDS(const int step_size, std::vector<double> &y, const st
 	for(auto ii = 0 ; ii < state.size(); ii++){
 		state[ii] = x[(x.size()) - state.size() + ii];
 	}
-
-	
 }
 
 void convolve_UPSAMPLE_N_dec_New(int step_size,int upsample_size, std::vector<double> &y, const std::vector<double> &x, const std::vector<double> &h, std::vector<double> &state)
@@ -162,7 +158,6 @@ void convolve_UPSAMPLE_N_dec_New(int step_size,int upsample_size, std::vector<do
         limit = (n%upsample_size < r0) ? trunc(((double)h.size())/ (double)upsample_size)+1 : trunc(((double)h.size())/ (double)upsample_size);
         y[n] = 0;
         test = 0;
-        //std::cerr << "limit " << limit << "\n";
         for(auto k = 0 ; k < limit ; k++){
             if (trunc(n*d/u) - k >= 0 && trunc(n*d/u) - k < max_size){
                 y[n] += h[ (n*d)%u + u*k] * x[trunc(n*d/u) - k];
@@ -177,13 +172,6 @@ void convolve_UPSAMPLE_N_dec_New(int step_size,int upsample_size, std::vector<do
         
         
     }
-    //std::cerr << "Testct " << testcnt << "\n";
-    //std::cerr << "Maxsize " << max_size << "\n";
-    
-
-
-
-
 	for(auto ii = 0 ; ii < state.size(); ii++){
 		state[ii] = x[(x.size()) - state.size() + ii];
 	}
@@ -195,7 +183,6 @@ void fmDemodArctanBlock(std::vector<double> &fm_demod,std::vector<double> &I, st
 	fm_demod.resize(I.size(), 0.0);
 	double thetadelta = 0, a, b, c, current_phase;
 	for(auto n = 0; n < I.size(); n++){
-		//std::cout << "Bad Samples -> I :" << I[0] << " Q : " << Q[0] << " \n";
 		a = b =c = current_phase = 0;
 		if(n == 0){
 			a = I[n]*(Q[n]-prev_phase[0]);		//prev phase is never being stored
@@ -210,20 +197,6 @@ void fmDemodArctanBlock(std::vector<double> &fm_demod,std::vector<double> &I, st
 
 			thetadelta = (a-b)/c;
 		}
-        //thetadelta = fmod(thetadelta,PI);
-        // int saftey = 0;
-        // while(thetadelta > PI || thetadelta < -PI){
-        //     if(saftey == 3){
-        //         break;
-        //     }
-        //     if(thetadelta > PI){
-        //         thetadelta = thetadelta - 2*PI;
-        //     }
-        //     else if(thetadelta < -PI){
-        //         thetadelta = thetadelta + 2*PI;
-        //     }
-        //     saftey++;
-        // }                                               //Unwrap
         
 		if(!std::isnan(thetadelta)){
 		fm_demod[n] = thetadelta;
@@ -250,7 +223,6 @@ void convolve_UPSAMPLE_N_dec(int step_size,int upsample_size, std::vector<double
 			for (auto n = phase; n < y.size(); n = n + upsample_size)
 			{
 				int x_count = n;
-				// std::cout << "phase : " <<  phase << " \n";
 				special = 0;
 				y[n] = 0;
 				for (auto m = 0; m < h.size(); m = m + 1)
@@ -264,19 +236,8 @@ void convolve_UPSAMPLE_N_dec(int step_size,int upsample_size, std::vector<double
 						}
 
 					}
-
-				// sleep(1);
-				// std::cout << " n: " << n <<" y[n] : " <<  y[n] << " \n";
 			}
-
 	}
-
-	// for(auto ii = 0 ; ii < y.size(); ii++){
-	// 	y[ii] =y[ii]*upsample_size;
-	// }
-
-//	for(auto i = 0 ; i < y.size(); i++){y[i] = y[i]*upsample_size;}
-
 
 	for(auto ii = 0 ; ii < state.size(); ii++){
 		state[ii] = x[(x.size()) - state.size() + ii];
@@ -312,8 +273,6 @@ void impulseResponseRootRaisedCosine(double Fs,int N_taps,std::vector<double> &i
 	
 }
 
-
-
 void impulseResponseRootRaisedCosine2(double Fs, int N_taps, std::vector<double> &impulseResponseRRC)
 {
 	double T_s = 1.0/2375.0;
@@ -339,23 +298,16 @@ void impulseResponseRootRaisedCosine2(double Fs, int N_taps, std::vector<double>
 	}
 }
 
-
 void process_MBA(int &new_bit, std::vector<int> &MBA, int &previous_match, int &is_nSync, 
 int &nSync_Hit_counter, int &nSync_Flop_counter, int &allowed_nSync_Flops, 
 std::vector<std::vector<int>> &found_array,
 std::vector< std::vector<int> > &parityArray, std::vector<int> &syndrome){
     MBA.insert(MBA.begin(), new_bit);
     MBA.erase(MBA.end()-1);
-    
-    
- 
 
     if(is_nSync == 0){
         Gfield_mult_reverse(MBA,parityArray,syndrome);
         previous_match = 0;
-        //std::cerr << "Here\n";
-    
-
         int i=0;
         if (syndrome[i+0] == 1 &&
         syndrome[i+1] == 1 &&
@@ -448,8 +400,6 @@ std::vector< std::vector<int> > &parityArray, std::vector<int> &syndrome){
             //std::cerr << ("Found code D")<< "\n";
         }
 
-    
-
         std::vector<int> del_array;
         for (auto i=0; i<found_array.size()/*Size of first dimension of found array*/; i++){
             if(found_array[i][0] == previous_match && found_array[i][1] == 26){
@@ -516,10 +466,6 @@ std::vector< std::vector<int> > &parityArray, std::vector<int> &syndrome){
                     previous_match = (int)'D';
                 else if(previous_match == (int)'D')
                     previous_match = (int)'A';
-
-
-
-
                 
             }
             else if (syndrome[i+0] == 1 &&
@@ -667,7 +613,6 @@ std::vector< std::vector<int> > &parityArray, std::vector<int> &syndrome){
 
             }
 
-
             if(codeFound == 0){
                 if(nSync_Flop_counter >= allowed_nSync_Flops){
                         std::cerr << ("De-synchronized...") << "\n";
@@ -694,13 +639,7 @@ std::vector< std::vector<int> > &parityArray, std::vector<int> &syndrome){
         }
 
         nSync_Hit_counter = nSync_Hit_counter + 1;
-
-
-
-
     }
-
-
 }
 
 void Gfield_mult_reverse(std::vector<int> &MBA, std::vector< std::vector<int> > &parityArray, std::vector<int> &syndrome){
