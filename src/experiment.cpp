@@ -8,7 +8,7 @@ Ontario, Canada
 */
 
 #include "dy4.h"
-#include "filter.h"
+#include "filterRDS.h"
 #include "fmPll.h"
 #include "fourier.h"
 #include "genfunc.h"

@@ -7,9 +7,13 @@ Ontario, Canada
 */
 
 #include "dy4.h"
-#include "filter.h"
+#include "filterRDS.h"
 #include <math.h>
 #define PI 3.14159265358979323846
+
+//NOTE RDS methods are also below
+
+
 // function to compute the impulse response "h" based on the sinc function
 void impulseResponseLPF(double Fs, double Fc, unsigned short int num_taps, std::vector<double> &h, double decim)
 {
@@ -422,6 +426,9 @@ std::vector< std::vector<int> > &parityArray, std::vector<int> &syndrome){
         }
 
         if(is_nSync == 0){  
+            for( auto i = 0; i < del_array.size() ; i++){
+                del_array[i] = del_array[i] - i;
+            }
             for( auto i = 0; i < del_array.size() ; i++){
                 found_array.erase(found_array.begin() + del_array[i]);
             }
